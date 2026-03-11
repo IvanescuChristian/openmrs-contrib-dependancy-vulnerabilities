@@ -1,0 +1,1198 @@
+{
+  "version": "15.0.6",
+  "schema": "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.6/dist/dependency-scanning-report-format.json?ref_type=tags",
+  "scan": {
+    "scanner": {
+      "id": "org.owasp.dependency-check",
+      "name": "Dependency-Check Core",
+      "version": "12.2.0",
+      "vendor": {
+        "name": "OWASP"
+      },
+      "url": "https://github.com/dependency-check/DependencyCheck/"
+    },
+    "analyzer": {
+      "id": "org.owasp.dependency-check",
+      "name": "Dependency-Check Core",
+      "version": "12.2.0",
+      "vendor": {
+        "name": "OWASP"
+      },
+      "url": "https://github.com/dependency-check/DependencyCheck/"
+    },
+    "end_time": "2026-02-27T10:05:51",
+    "start_time": "2026-02-27T10:05:51",
+    "status": "success",
+    "type": "dependency_scanning"
+  },
+  "vulnerabilities": [
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "a9edd4a5b7f2cd0417492faa16dd98f6ce19988f",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/barcodes-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:barcodes"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2017-12796",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2017-12796",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-12796"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2017-12796",
+      "description": "The Reporting Compatibility Add On before 2.0.4 for OpenMRS, as distributed in OpenMRS Reference Application before 2.6.1, does not authenticate users when deserializing XML input into ReportSchema objects. The result is that remote unauthenticated users are able to execute operating system commands by crafting malicious XML payloads, as demonstrated by a single admin/reports/reportSchemaXml.form request.",
+      "severity": "Critical",
+      "links": [
+        {
+          "name": "EXPLOIT",
+          "url": "https://isears.github.io/jekyll/update/2017/10/21/openmrs-rce.html"
+        },
+        {
+          "name": "RELEASE_NOTES,VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/RES/Release+Notes+2.6.1"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
+        },
+        {
+          "name": "EXPLOIT",
+          "url": "https://isears.github.io/jekyll/update/2017/10/21/openmrs-rce.html"
+        },
+        {
+          "name": "RELEASE_NOTES,VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/RES/Release+Notes+2.6.1"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2021-43094",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2021-43094",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2021-43094"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2021-43094",
+      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition \u003C=2.11 and Platform Standalone Edition \u003C=2.4.0 via GET requests on arbitrary parameters in patient.page.",
+      "severity": "Critical",
+      "links": [
+        {
+          "name": "ISSUE_TRACKING,THIRD_PARTY_ADVISORY,VENDOR_ADVISORY",
+          "url": "https://issues.openmrs.org/browse/TRUNK-6043"
+        },
+        {
+          "name": "PRODUCT",
+          "url": "https://openmrs.org/demo/"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
+        },
+        {
+          "name": "ISSUE_TRACKING,THIRD_PARTY_ADVISORY,VENDOR_ADVISORY",
+          "url": "https://issues.openmrs.org/browse/TRUNK-6043"
+        },
+        {
+          "name": "PRODUCT",
+          "url": "https://openmrs.org/demo/"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2022-23612",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2022-23612",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-23612"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2022-23612",
+      "description": "OpenMRS is a patient-based medical record system focusing on giving providers a free customizable electronic medical record system. Affected versions are subject to arbitrary file exfiltration due to failure to sanitize request when satisfying GET requests for `/images` & `/initfilter/scripts`. This can allow an attacker to access any file on a system running OpenMRS that is accessible to the user id OpenMRS is running under. Affected implementations should update to the latest patch version of OpenMRS Core for the minor version they use. These are: 2.1.5, 2.2.1, 2.3.5, 2.4.5 and 2.5.3. As a general rule, this vulnerability is already mitigated by Tomcat's URL normalization in Tomcat 7.0.28+. Users on older versions of Tomcat should consider upgrading their Tomcat instance as well as their OpenMRS instance.",
+      "severity": "High",
+      "links": [
+        {
+          "name": "EXPLOIT,PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/security/advisories/GHSA-8rgr-ww69-jv65"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/blob/ee3373a7a775bfdfa263e2e912c72e64342fb4f0/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/commit/db8454bf19a092a78d53ee4dba2af628b730a6e7#diff-7c64d9f61d4d4e2ddba92920d7cf63ec96091b308d43904956b3846bc0c26d80R128"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "EXPLOIT,PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/security/advisories/GHSA-8rgr-ww69-jv65"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/blob/ee3373a7a775bfdfa263e2e912c72e64342fb4f0/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/commit/db8454bf19a092a78d53ee4dba2af628b730a6e7#diff-7c64d9f61d4d4e2ddba92920d7cf63ec96091b308d43904956b3846bc0c26d80R128"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5728",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5728",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5728"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5728",
+      "description": "OpenMRS 2.9 and prior copies \"Referrer\" header values into an html element named \"redirectUrl\" within many webpages (such as login.htm). There is insufficient validation for this parameter, which allows for the possibility of cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5729",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5729",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5729"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5729",
+      "description": "In OpenMRS 2.9 and prior, the UI Framework Error Page reflects arbitrary, user-supplied input back to the browser, which can result in XSS. Any page that is able to trigger a UI Framework Error is susceptible to this issue.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5730",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5730",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5730"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5730",
+      "description": "In OpenMRS 2.9 and prior, the sessionLocation parameter for the login page is vulnerable to cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5731",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5731",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5731"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5731",
+      "description": "In OpenMRS 2.9 and prior, the app parameter for the ActiveVisit's page is vulnerable to cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5732",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5732",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5732"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5732",
+      "description": "In OpenMRS 2.9 and prior, he import functionality of the Data Exchange Module does not properly redirect to a login page when an unauthenticated user attempts to access it. This allows unauthenticated users to use a feature typically restricted to administrators.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5733",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5733",
+          "value": "623ce4332723816de6f4f956fadcd09149efd680",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5733"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT.jar/META-INF/maven/org.openmrs.module/billing-omod/pom.xml",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5733",
+      "description": "In OpenMRS 2.9 and prior, the export functionality of the Data Exchange Module does not properly redirect to a login page when an unauthenticated user attempts to access it. This allows the export of potentially sensitive information.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2017-12796",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2017-12796",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-12796"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2017-12796",
+      "description": "The Reporting Compatibility Add On before 2.0.4 for OpenMRS, as distributed in OpenMRS Reference Application before 2.6.1, does not authenticate users when deserializing XML input into ReportSchema objects. The result is that remote unauthenticated users are able to execute operating system commands by crafting malicious XML payloads, as demonstrated by a single admin/reports/reportSchemaXml.form request.",
+      "severity": "Critical",
+      "links": [
+        {
+          "name": "EXPLOIT",
+          "url": "https://isears.github.io/jekyll/update/2017/10/21/openmrs-rce.html"
+        },
+        {
+          "name": "RELEASE_NOTES,VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/RES/Release+Notes+2.6.1"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
+        },
+        {
+          "name": "EXPLOIT",
+          "url": "https://isears.github.io/jekyll/update/2017/10/21/openmrs-rce.html"
+        },
+        {
+          "name": "RELEASE_NOTES,VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/RES/Release+Notes+2.6.1"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2021-43094",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2021-43094",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2021-43094"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2021-43094",
+      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition \u003C=2.11 and Platform Standalone Edition \u003C=2.4.0 via GET requests on arbitrary parameters in patient.page.",
+      "severity": "Critical",
+      "links": [
+        {
+          "name": "ISSUE_TRACKING,THIRD_PARTY_ADVISORY,VENDOR_ADVISORY",
+          "url": "https://issues.openmrs.org/browse/TRUNK-6043"
+        },
+        {
+          "name": "PRODUCT",
+          "url": "https://openmrs.org/demo/"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
+        },
+        {
+          "name": "ISSUE_TRACKING,THIRD_PARTY_ADVISORY,VENDOR_ADVISORY",
+          "url": "https://issues.openmrs.org/browse/TRUNK-6043"
+        },
+        {
+          "name": "PRODUCT",
+          "url": "https://openmrs.org/demo/"
+        },
+        {
+          "name": "VENDOR_ADVISORY",
+          "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2022-23612",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2022-23612",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-23612"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2022-23612",
+      "description": "OpenMRS is a patient-based medical record system focusing on giving providers a free customizable electronic medical record system. Affected versions are subject to arbitrary file exfiltration due to failure to sanitize request when satisfying GET requests for `/images` & `/initfilter/scripts`. This can allow an attacker to access any file on a system running OpenMRS that is accessible to the user id OpenMRS is running under. Affected implementations should update to the latest patch version of OpenMRS Core for the minor version they use. These are: 2.1.5, 2.2.1, 2.3.5, 2.4.5 and 2.5.3. As a general rule, this vulnerability is already mitigated by Tomcat's URL normalization in Tomcat 7.0.28+. Users on older versions of Tomcat should consider upgrading their Tomcat instance as well as their OpenMRS instance.",
+      "severity": "High",
+      "links": [
+        {
+          "name": "EXPLOIT,PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/security/advisories/GHSA-8rgr-ww69-jv65"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/blob/ee3373a7a775bfdfa263e2e912c72e64342fb4f0/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/commit/db8454bf19a092a78d53ee4dba2af628b730a6e7#diff-7c64d9f61d4d4e2ddba92920d7cf63ec96091b308d43904956b3846bc0c26d80R128"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "EXPLOIT,PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/security/advisories/GHSA-8rgr-ww69-jv65"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/blob/ee3373a7a775bfdfa263e2e912c72e64342fb4f0/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://github.com/openmrs/openmrs-core/commit/db8454bf19a092a78d53ee4dba2af628b730a6e7#diff-7c64d9f61d4d4e2ddba92920d7cf63ec96091b308d43904956b3846bc0c26d80R128"
+        },
+        {
+          "name": "PATCH,THIRD_PARTY_ADVISORY",
+          "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5728",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5728",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5728"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5728",
+      "description": "OpenMRS 2.9 and prior copies \"Referrer\" header values into an html element named \"redirectUrl\" within many webpages (such as login.htm). There is insufficient validation for this parameter, which allows for the possibility of cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5729",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5729",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5729"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5729",
+      "description": "In OpenMRS 2.9 and prior, the UI Framework Error Page reflects arbitrary, user-supplied input back to the browser, which can result in XSS. Any page that is able to trigger a UI Framework Error is susceptible to this issue.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5730",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5730",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5730"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5730",
+      "description": "In OpenMRS 2.9 and prior, the sessionLocation parameter for the login page is vulnerable to cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5731",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5731",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5731"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5731",
+      "description": "In OpenMRS 2.9 and prior, the app parameter for the ActiveVisit's page is vulnerable to cross-site scripting.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5732",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5732",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5732"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5732",
+      "description": "In OpenMRS 2.9 and prior, he import functionality of the Data Exchange Module does not properly redirect to a login page when an unauthenticated user attempts to access it. This allows unauthenticated users to use a feature typically restricted to administrators.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2020-5733",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2020-5733",
+          "value": "b9229ac0157f27de2a928c90045d323ff0303ce2",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-5733"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/api/target/billing-api-2.2.0-SNAPSHOT.jar",
+        "dependency": {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        }
+      },
+      "name": "CVE-2020-5733",
+      "description": "In OpenMRS 2.9 and prior, the export functionality of the Data Exchange Module does not properly redirect to a login page when an unauthenticated user attempts to access it. This allows the export of potentially sensitive information.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://www.tenable.com/security/research/tra-2020-18"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "15563e97b944c4976458570fdb5ae529204c1a72",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/bouncy-castle-connector-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:bouncy-castle-connector"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "8387ef8346202c756d155f85255ef5cba2dfca5f",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/commons-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:commons"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "da11a2e99685104bd49c58f6aca479acb8d0edef",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/font-asian-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:font-asian"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "3489fa695eb6f3e5beec6cfeb68ed145311f4560",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/io-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:io"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "a0a8982cefd2e3d57f8e47603534b2b6c5768fa0",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/kernel-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:kernel"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-6298",
+      "identifiers": [
+        {
+          "type": "NVD",
+          "name": "CVE-2023-6298",
+          "value": "01df3cc35b5c6a477b101972fec6cf3742237d49",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2023-6298"
+        }
+      ],
+      "location": {
+        "file": "/github/workspace/omod/target/billing-2.2.0-SNAPSHOT/lib/layout-8.0.2.jar",
+        "dependency": {
+          "package": {
+            "name": "com.itextpdf:layout"
+          },
+          "version": "8.0.2"
+        }
+      },
+      "name": "CVE-2023-6298",
+      "description": "A vulnerability classified as problematic was found in Apryse iText 8.0.2. This vulnerability affects the function main of the file PdfDocument.java. The manipulation leads to improper validation of array index. The attack can be initiated remotely. The exploit has been disclosed to the public and may be used. The real existence of this vulnerability is still doubted at the moment. The identifier of this vulnerability is VDB-246124. NOTE: The vendor was contacted early about this disclosure but did not respond in any way. A statement published afterwards explains that the exception is not a vulnerability and the identified CWEs might not apply to the software.",
+      "severity": "Medium",
+      "links": [
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        },
+        {
+          "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
+          "url": "https://drive.google.com/drive/folders/1OBAeGH_rNfa1os6g6QlIt4pL-2NKHZm_?usp=sharing"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://kb.itextpdf.com/itext/statement-regarding-cve-2022-24198-and-2023-6298"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?ctiid.246124"
+        },
+        {
+          "name": "THIRD_PARTY_ADVISORY",
+          "url": "https://vuldb.com/?id.246124"
+        }
+      ]
+    }
+  ],
+  "dependency_files": [
+    {
+      "path": "pom.xml",
+      "package_manager": "maven",
+      "dependencies": [
+        {
+          "package": {
+            "name": "com.itextpdf:barcodes"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "org.openmrs.module:billing-omod"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        },
+        {
+          "package": {
+            "name": "org.openmrs.module:billing-api"
+          },
+          "version": "2.2.0-SNAPSHOT"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:bouncy-castle-connector"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:commons"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:font-asian"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:io"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:kernel"
+          },
+          "version": "8.0.2"
+        },
+        {
+          "package": {
+            "name": "com.itextpdf:layout"
+          },
+          "version": "8.0.2"
+        }
+      ]
+    }
+  ],
+  "remediations": []
+}
