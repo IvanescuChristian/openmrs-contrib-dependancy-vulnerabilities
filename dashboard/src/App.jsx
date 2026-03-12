@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import JSZip from 'jszip';
 import './App.css';
-import billingData from './data/openmrs-module-billing.json';
-import coreData from './data/openmrs-core.json';
-import idgenData from './data/openmrs-module-idgen.json';
+
+const localDataImports = import.meta.glob('./data/*.json', { eager: true });
+const coreData = localDataImports['./data/openmrs-core.json']?.default || null;
+const idgenData = localDataImports['./data/openmrs-module-idgen.json']?.default || null;
+const billingData = localDataImports['./data/openmrs-module-billing.json']?.default || null;
 
 const SEVERITY_WEIGHT = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'None': 0 };
 
@@ -68,23 +70,19 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
         if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
 
         try {
-            console.log(`[${repoName}] Directly provided Json attempt : ${keySourceName}...`);
             const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
             const jsonRes = await fetch(jsonUrl, { headers });
 
             if (jsonRes.ok) {
-                console.log(`[${repoName}] Json found on branch (Key: ${keySourceName}).`);
                 return { data: await jsonRes.json(), extractMethod: 'JSON', keyUsed: keySourceName };
             } else if (jsonRes.status === 401 || jsonRes.status === 403) {
                 throw new Error("TokenInvalid");
             }
         } catch (e) {
-            console.log(`[${repoName}] No directly provided Json found`);
             if (e.message === "TokenInvalid") throw e;
         }
 
         try {
-            console.log(`[${repoName}] Attempting zip extraction using : ${keySourceName}...`);
             const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
             const zipRes = await fetch(zipUrl, { headers });
 
@@ -99,7 +97,6 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
                 }
 
                 if (jsonFile) {
-                    console.log(`[${repoName}] Zip extraction successful (Key: ${keySourceName}).`);
                     const jsonContent = await jsonFile.async('string');
                     return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
                 }
@@ -107,7 +104,6 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
                 throw new Error("TokenInvalid");
             }
         } catch (e) {
-            console.log(`[${repoName}] Zip extraction failed`);
             if (e.message === "TokenInvalid") throw e;
         }
 
@@ -116,23 +112,16 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
 
     if (browserToken) {
         try {
-            console.log(`[${repoName}] Starting provided api extraction`);
             return await fetchWithToken(browserToken, 'Browser');
-        } catch (e) {
-            console.warn(`[${repoName}] Inserted key extraction unsuccessful moving onto .env key`);
-        }
+        } catch (e) {}
     }
 
     if (envToken && envToken !== browserToken) {
         try {
-            console.log(`[${repoName}] Starting .env api extraction`);
             return await fetchWithToken(envToken, '.env');
-        } catch (e) {
-            console.warn(`[${repoName}] .env key extraction unsuccessful`);
-        }
+        } catch (e) {}
     }
 
-    console.error(`[${repoName}] Both provided and local Api have failed, going into local repo`);
     return null;
 }
 
@@ -349,24 +338,38 @@ function RepoAccordion({ repo }) {
 }
 
 export default function App() {
-    const staticReports = useMemo(() => {
-        return [
-            { ...processRepo(coreData, 'openmrs-core'), dataSource: 'Local Fallback (JSON)' },
-            { ...processRepo(idgenData, 'openmrs-module-idgen'), dataSource: 'Local Fallback (JSON)' },
-            { ...processRepo(billingData, 'openmrs-module-billing'), dataSource: 'Local Fallback (JSON)' }
-        ].sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
-    }, []);
-
-    const [reports, setReports] = useState(staticReports);
-
+    const [reports, setReports] = useState([]);
     const [token, setToken] = useState('');
     const envToken = import.meta.env.VITE_GITHUB_TOKEN || '';
-
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState('');
     const [fetchStatus, setFetchStatus] = useState(null);
 
-    const handleFetchLive = async () => {
+    const fetchLocalData = async (repoName, fallbackJson) => {
+        let data = null;
+        let source = '';
+        if (fallbackJson) {
+            data = fallbackJson;
+            source = 'Local Fallback (JSON)';
+        } else {
+            try {
+                const localZipRes = await fetch('/test.zip');
+                if (localZipRes.ok) {
+                    const zipBlob = await localZipRes.blob();
+                    const zip = await JSZip.loadAsync(zipBlob);
+                    let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
+                    if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+                    if (jsonFile) {
+                        data = JSON.parse(await jsonFile.async('string'));
+                        source = 'Local Fallback (ZIP)';
+                    }
+                }
+            } catch (e) {}
+        }
+        return { data, source };
+    };
+
+    const loadData = async (isFirstRun) => {
         setIsLoading(true);
         setErrorMsg('');
         setFetchStatus(null);
@@ -377,54 +380,50 @@ export default function App() {
                 { name: 'openmrs-module-billing', fallback: billingData }
             ];
             const liveDataResults = [];
-            let successCount = 0;
+            let apiSuccessCount = 0;
 
             for (const repoConfig of reposToFetch) {
-                const apiResult = await fetchLiveRepoData(repoConfig.name, token, envToken);
+                let resultData = null;
+                let resultSource = '';
 
-                if (apiResult && apiResult.data) {
-                    successCount++;
-                    const customBadgeText = `API: ${apiResult.extractMethod} (Key: ${apiResult.keyUsed})`;
-                    liveDataResults.push({ ...processRepo(apiResult.data, repoConfig.name), dataSource: customBadgeText });
-                } else {
-                    let localData = null;
-                    let localDataSourceText = '';
-
-                    if (repoConfig.fallback) {
-                        localData = repoConfig.fallback;
-                        localDataSourceText = 'Local Fallback (JSON)';
-                    }
-
-                    if (!localData) {
-                        try {
-                            console.log(`[${repoConfig.name}] Attempting extraction from local zip /public/test.zip...`);
-                            const localZipRes = await fetch('/test.zip');
-                            if (localZipRes.ok) {
-                                const zipBlob = await localZipRes.blob();
-                                const zip = await JSZip.loadAsync(zipBlob);
-                                let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoConfig.name) && f.name.endsWith('.json'));
-                                if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
-
-                                if (jsonFile) {
-                                    console.log(`[${repoConfig.name}] Local zip jsons extraction successful`);
-                                    localData = JSON.parse(await jsonFile.async('string'));
-                                    localDataSourceText = 'Local Fallback (ZIP)';
-                                }
-                            }
-                        } catch (e) {
-                            console.log(`[${repoConfig.name}] Local zip extraction unsuccessful`);
+                if (isFirstRun) {
+                    const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
+                    if (localRes.data) {
+                        resultData = localRes.data;
+                        resultSource = localRes.source;
+                    } else {
+                        const apiRes = await fetchLiveRepoData(repoConfig.name, token, envToken);
+                        if (apiRes && apiRes.data) {
+                            resultData = apiRes.data;
+                            resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
+                            apiSuccessCount++;
                         }
                     }
+                } else {
+                    const apiRes = await fetchLiveRepoData(repoConfig.name, token, envToken);
+                    if (apiRes && apiRes.data) {
+                        resultData = apiRes.data;
+                        resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
+                        apiSuccessCount++;
+                    } else {
+                        const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
+                        if (localRes.data) {
+                            resultData = localRes.data;
+                            resultSource = localRes.source;
+                        }
+                    }
+                }
 
-                    liveDataResults.push({ ...processRepo(localData, repoConfig.name), dataSource: localDataSourceText });
+                if (resultData) {
+                    liveDataResults.push({ ...processRepo(resultData, repoConfig.name), dataSource: resultSource });
                 }
             }
 
             liveDataResults.sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
             setReports(liveDataResults);
 
-            if (successCount === reposToFetch.length) setFetchStatus('live');
-            else if (successCount > 0) setFetchStatus('partial');
+            if (apiSuccessCount === reposToFetch.length) setFetchStatus('live');
+            else if (apiSuccessCount > 0) setFetchStatus('partial');
             else setFetchStatus('local');
 
         } catch (err) {
@@ -432,6 +431,14 @@ export default function App() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    useEffect(() => {
+        loadData(true);
+    }, []);
+
+    const handleFetchLive = () => {
+        loadData(false);
     };
 
     return (
