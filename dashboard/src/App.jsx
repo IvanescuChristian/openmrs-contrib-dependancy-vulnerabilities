@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import JSZip from 'jszip'; // <--- Importăm librăria de dezarhivare
-// Fallback pentru Phase 1 (Date statice)
+import JSZip from 'jszip';
 import billingData from './data/openmrs-module-billing.json';
 import coreData from './data/openmrs-core.json';
 import idgenData from './data/openmrs-module-idgen.json';
 
-// --- UTILS & CORE LOGIC ---
 const SEVERITY_WEIGHT = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'None': 0 };
 
 const compareVersions = (v1, v2) => {
@@ -19,18 +17,14 @@ const extractSafe = (val) => (val !== undefined && val !== null && val !== '') ?
 
 const processRepo = (rawData, name) => {
     const vulnerabilities = rawData.vulnerabilities || [];
-
     const grouped = vulnerabilities.reduce((acc, v) => {
         const pkgName = v.location?.dependency?.package?.name || 'unknown';
         if (!acc[pkgName]) {
             acc[pkgName] = { name: pkgName, version: extractSafe(v.location?.dependency?.version), vulns: [], maxScore: 0 };
         }
-
         const rawScore = v.cvssScore || v.score || (SEVERITY_WEIGHT[v.severity] * 2.5);
         const severityWeight = SEVERITY_WEIGHT[v.severity] || 0;
-
         if (rawScore > acc[pkgName].maxScore) acc[pkgName].maxScore = rawScore;
-
         acc[pkgName].vulns.push({
             id: extractSafe(v.id),
             severity: extractSafe(v.severity),
@@ -59,56 +53,60 @@ const processRepo = (rawData, name) => {
     return { name, maxScore: repoMaxScore, maxSeverity: repoSeverity, dependencies: deps };
 };
 
-// --- API GITHUB LOGIC (PHASE 2) ---
 async function fetchLiveRepoData(repoName, token) {
     const headers = { 'Accept': 'application/vnd.github.v3+json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     try {
-        // 1. Luăm ultima rulare reușită de pe main
-        const runsRes = await fetch(`https://api.github.com/repos/openmrs/${repoName}/actions/runs?branch=main&status=success`, { headers });
-        if (!runsRes.ok) throw new Error('Nu am putut obține rulările. (Verifică token-ul)');
+        const runsRes = await fetch(`https://api.github.com/repos/openmrs/${repoName}/actions/runs?status=success&per_page=30`, { headers });
+        if (!runsRes.ok) throw new Error(`API error for ${repoName}`);
         const runsData = await runsRes.json();
-
         if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) return null;
-        const latestRun = runsData.workflow_runs[0];
 
-        // 2. Căutăm artifactele pentru rularea respectivă
-        const artifactsRes = await fetch(latestRun.artifacts_url, { headers });
-        const artifactsData = await artifactsRes.json();
+        let targetArtifact = null;
+        for (const run of runsData.workflow_runs) {
+            const artifactsRes = await fetch(run.artifacts_url, { headers });
+            const artifactsData = await artifactsRes.json();
+            if (artifactsData.artifacts && artifactsData.artifacts.length > 0) {
+                targetArtifact = artifactsData.artifacts.find(a =>
+                    a.name.toLowerCase().includes('report') || a.name.toLowerCase().includes('dependency')
+                );
+                if (targetArtifact) break;
+            }
+        }
 
-        const reportArtifact = artifactsData.artifacts.find(a =>
-            a.name.toLowerCase().includes('report') || a.name.toLowerCase().includes('dependency')
-        );
-        if (!reportArtifact) return null;
+        if (!targetArtifact) return null;
 
-        // 3. Descărcăm ZIP-ul
-        const zipRes = await fetch(reportArtifact.archive_download_url, { headers });
-        if (!zipRes.ok) throw new Error('Eroare la descărcarea arhivei. Ai nevoie de un Token.');
+        const zipRes = await fetch(targetArtifact.archive_download_url, { headers });
+        if (!zipRes.ok) throw new Error('Download failed');
         const zipBlob = await zipRes.blob();
-
-        // 4. Dezarhivăm și citim JSON-ul în memorie
         const zip = await JSZip.loadAsync(zipBlob);
-        const jsonFile = Object.values(zip.files).find(f => f.name.endsWith('.json'));
-        if (!jsonFile) return null;
 
-        const jsonString = await jsonFile.async('string');
-        return JSON.parse(jsonString);
+        let jsonContent = null;
+        const expectedPath = `${repoName}/vulnerability-report.json`;
+
+        if (zip.files[expectedPath]) {
+            jsonContent = await zip.files[expectedPath].async('string');
+        } else {
+            const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json'));
+            if (jsonFile) jsonContent = await jsonFile.async('string');
+        }
+
+        return jsonContent ? JSON.parse(jsonContent) : null;
     } catch (error) {
-        console.error(`Eroare la ${repoName}:`, error);
-        throw error;
+        console.error(error);
+        return null;
     }
 }
 
-// --- COMPONENTE STILIZATE ---
-const SeverityPill = ({ severity }) => { /* ... codul tău vechi (rămâne la fel) ... */
+const SeverityPill = ({ severity }) => {
     if (!severity || severity === '-' || severity === 'None') return null;
     const styles = { 'Critical': { bg: '#ff8a8a', text: '#5a0000' }, 'High': { bg: '#ffc6c6', text: '#7a0000' }, 'Medium': { bg: '#ffe58f', text: '#5c4300' }, 'Low': { bg: '#d6e4ff', text: '#002c8c' } };
     const s = styles[severity] || styles['Low'];
     return <span style={{ backgroundColor: s.bg, color: s.text, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-block' }}>{severity}</span>;
 };
 
-const SortableHeader = ({ label, sortKey, currentSortKey, sortOrder, onSort }) => { /* ... codul tău vechi ... */
+const SortableHeader = ({ label, sortKey, currentSortKey, sortOrder, onSort }) => {
     const isActive = currentSortKey === sortKey;
     return (
         <div onClick={() => onSort(sortKey)} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none', color: isActive ? '#0f62fe' : '#161616', fontWeight: '600' }}>
@@ -120,7 +118,7 @@ const SortableHeader = ({ label, sortKey, currentSortKey, sortOrder, onSort }) =
 const depGridTemplate = "3fr 1.5fr 1.5fr 1fr 1fr 1.5fr";
 const cveGridTemplate = "1.5fr 1fr 1fr 3fr 1.5fr 1fr 1fr";
 
-function DependencyRow({ dep }) { /* ... codul tău vechi ... */
+function DependencyRow({ dep }) {
     const [isOpen, setIsOpen] = useState(false);
     const [cveSort, setCveSort] = useState({ key: 'severityWeight', order: 'desc' });
     const handleCveSort = (key) => setCveSort(prev => ({ key, order: prev.key === key && prev.order === 'desc' ? 'asc' : 'desc' }));
@@ -158,7 +156,7 @@ function DependencyRow({ dep }) { /* ... codul tău vechi ... */
     );
 }
 
-function RepoAccordion({ repo }) { /* ... codul tău vechi ... */
+function RepoAccordion({ repo }) {
     const [isOpen, setIsOpen] = useState(true);
     const [depSort, setDepSort] = useState({ key: 'maxScore', order: 'desc' });
     const handleDepSort = (key) => setDepSort(prev => ({ key, order: prev.key === key && prev.order === 'desc' ? 'asc' : 'desc' }));
@@ -190,9 +188,7 @@ function RepoAccordion({ repo }) { /* ... codul tău vechi ... */
     );
 }
 
-// --- NIVELUL 1: Aplicația Principală ---
 export default function App() {
-    // Phase 1 (Date statice) ca default
     const staticReports = useMemo(() => {
         return [
             processRepo(coreData, 'openmrs-core'),
@@ -202,32 +198,25 @@ export default function App() {
     }, []);
 
     const [reports, setReports] = useState(staticReports);
-    const [token, setToken] = useState('');
+    const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || '');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
-    const [isLive, setIsLive] = useState(false); // Să știm dacă afișăm date statice sau live
+    const [isLive, setIsLive] = useState(false);
 
-    // Funcția apelată când apeși "Fetch Live Data"
     const handleFetchLive = async () => {
         setIsLoading(true);
         setErrorMsg('');
-
         try {
-            const reposToFetch = ['openmrs-core', 'openmrs-module-idgen', 'openmrs-module-billing'];
+            const reposToFetch = [
+                { name: 'openmrs-core', fallback: coreData },
+                { name: 'openmrs-module-idgen', fallback: idgenData },
+                { name: 'openmrs-module-billing', fallback: billingData }
+            ];
             const liveDataResults = [];
-
-            for (const repo of reposToFetch) {
-                const rawJson = await fetchLiveRepoData(repo, token);
-                if (rawJson) {
-                    liveDataResults.push(processRepo(rawJson, repo));
-                }
+            for (const repoConfig of reposToFetch) {
+                const rawJson = await fetchLiveRepoData(repoConfig.name, token);
+                liveDataResults.push(processRepo(rawJson || repoConfig.fallback, repoConfig.name));
             }
-
-            if (liveDataResults.length === 0) {
-                throw new Error("Nu am putut obține date live. Verifică dacă token-ul este corect.");
-            }
-
-            // Sortăm și setăm datele noi
             liveDataResults.sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
             setReports(liveDataResults);
             setIsLive(true);
@@ -241,61 +230,23 @@ export default function App() {
     return (
         <div style={{ backgroundColor: '#fafafa', minHeight: '100vh', padding: '40px 20px', fontFamily: '"Inter", "Segoe UI", sans-serif' }}>
             <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
-
                 <header style={{ marginBottom: '40px' }}>
-                    <h1 style={{ fontSize: '42px', color: '#161616', margin: '0 0 16px 0', fontWeight: '400', letterSpacing: '-0.5px' }}>
-                        OpenMRS Dependency Vulnerability Report
-                    </h1>
+                    <h1 style={{ fontSize: '42px', color: '#161616', margin: '0 0 16px 0', fontWeight: '400' }}>OpenMRS Dependency Vulnerability Report</h1>
                     <div style={{ height: '6px', width: '80px', backgroundColor: '#008577', marginBottom: '24px' }}></div>
-                    <p style={{ color: '#333', fontSize: '16px', maxWidth: '1200px', lineHeight: '1.5' }}>
-                        A summary of known security vulnerabilities detected across OpenMRS modules by automated dependency scanning.
-                        Each module lists its vulnerable dependencies, severity levels, and recommended fix versions.
-                    </p>
+                    <p style={{ color: '#333', fontSize: '16px', maxWidth: '1200px', lineHeight: '1.5' }}>A summary of known security vulnerabilities detected across OpenMRS modules.</p>
                 </header>
-
-                {/* --- SECȚIUNEA PHASE 2 (CONTROALE API) --- */}
                 <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '4px', border: '1px solid #dcdcdc', marginBottom: '32px', display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, maxWidth: '400px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub Personal Access Token (Opțional pentru statice, Necesar pt live):</label>
-                        <input
-                            type="password"
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                            style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc' }}
-                        />
+                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub PAT:</label>
+                        <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="ghp_xxxx" style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc' }} />
                     </div>
-                    <button
-                        onClick={handleFetchLive}
-                        disabled={isLoading || !token}
-                        style={{
-                            padding: '10px 20px', backgroundColor: token ? '#0f62fe' : '#e0e0e0', color: token ? 'white' : '#888',
-                            border: 'none', borderRadius: '4px', cursor: token && !isLoading ? 'pointer' : 'not-allowed', fontWeight: '600',
-                            marginTop: '16px'
-                        }}
-                    >
-                        {isLoading ? '⏳ Se descarcă...' : 'Fetch Live Data (Phase 2)'}
+                    <button onClick={handleFetchLive} disabled={isLoading || !token} style={{ padding: '10px 20px', backgroundColor: token ? '#0f62fe' : '#e0e0e0', color: token ? 'white' : '#888', border: 'none', borderRadius: '4px', cursor: token && !isLoading ? 'pointer' : 'not-allowed', fontWeight: '600', marginTop: '16px' }}>
+                        {isLoading ? '⏳ Loading...' : 'Fetch Live Data'}
                     </button>
-
-                    {isLive && !isLoading && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>✅ Date Live Încărcate</span>}
-                    {!isLive && !isLoading && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>⚠️ Date Statice (Phase 1)</span>}
+                    {isLive && !isLoading && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>✅ Live / Fallback Loaded</span>}
                 </div>
-
-                {errorMsg && (
-                    <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px', borderLeft: '4px solid #da1e28' }}>
-                        <strong>Eroare:</strong> {errorMsg}
-                    </div>
-                )}
-
-                {/* Randăm rapoartele (Fie statice, fie live, depinde ce s-a încărcat) */}
-                {isLoading ? (
-                    <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px', color: '#666' }}>
-                        Se descarcă și se dezarhivează rapoartele din GitHub Actions. Te rugăm să aștepți...
-                    </div>
-                ) : (
-                    reports.map(repo => <RepoAccordion key={repo.name} repo={repo} />)
-                )}
-
+                {errorMsg && <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px' }}>{errorMsg}</div>}
+                {isLoading ? <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px', color: '#666' }}>Fetching reports...</div> : reports.map(repo => <RepoAccordion key={repo.name} repo={repo} />)}
             </div>
         </div>
     );
