@@ -68,29 +68,6 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
         if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
 
         try {
-            console.log(`[${repoName}] Attempting zip extraction using : ${keySourceName}...`);
-            const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
-            const zipRes = await fetch(zipUrl, { headers });
-
-            if (zipRes.ok) {
-                const zipBlob = await zipRes.blob();
-                const zip = await JSZip.loadAsync(zipBlob);
-                const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
-
-                if (jsonFile) {
-                    console.log(`[${repoName}] Zip extraction successful (Key: ${keySourceName}).`);
-                    const jsonContent = await jsonFile.async('string');
-                    return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
-                }
-            } else if (zipRes.status === 401 || zipRes.status === 403) {
-                throw new Error("TokenInvalid");
-            }
-        } catch (e) {
-            console.log(`[${repoName}] Zip extraction failed attempting directly provided Json`);
-            if (e.message === "TokenInvalid") throw e;
-        }
-
-        try {
             console.log(`[${repoName}] Directly provided Json attempt : ${keySourceName}...`);
             const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
             const jsonRes = await fetch(jsonUrl, { headers });
@@ -103,6 +80,34 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
             }
         } catch (e) {
             console.log(`[${repoName}] No directly provided Json found`);
+            if (e.message === "TokenInvalid") throw e;
+        }
+
+        try {
+            console.log(`[${repoName}] Attempting zip extraction using : ${keySourceName}...`);
+            const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
+            const zipRes = await fetch(zipUrl, { headers });
+
+            if (zipRes.ok) {
+                const zipBlob = await zipRes.blob();
+                const zip = await JSZip.loadAsync(zipBlob);
+
+                let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
+
+                if (!jsonFile) {
+                    jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+                }
+
+                if (jsonFile) {
+                    console.log(`[${repoName}] Zip extraction successful (Key: ${keySourceName}).`);
+                    const jsonContent = await jsonFile.async('string');
+                    return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
+                }
+            } else if (zipRes.status === 401 || zipRes.status === 403) {
+                throw new Error("TokenInvalid");
+            }
+        } catch (e) {
+            console.log(`[${repoName}] Zip extraction failed`);
             if (e.message === "TokenInvalid") throw e;
         }
 
@@ -385,27 +390,30 @@ export default function App() {
                     let localData = null;
                     let localDataSourceText = '';
 
-                    try {
-                        console.log(`[${repoConfig.name}] Attempting extraction from local zip /public/test.zip...`);
-                        const localZipRes = await fetch('/test.zip');
-                        if (localZipRes.ok) {
-                            const zipBlob = await localZipRes.blob();
-                            const zip = await JSZip.loadAsync(zipBlob);
-                            const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
-                            if (jsonFile) {
-                                console.log(`[${repoConfig.name}] Local zip jsons extraction successful`);
-                                localData = JSON.parse(await jsonFile.async('string'));
-                                localDataSourceText = 'Local Fallback (ZIP)';
-                            }
-                        }
-                    } catch (e) {
-                        console.log(`[${repoConfig.name}] Local zip extraction unsuccessful`);
+                    if (repoConfig.fallback) {
+                        localData = repoConfig.fallback;
+                        localDataSourceText = 'Local Fallback (JSON)';
                     }
 
                     if (!localData) {
-                        console.log(`[${repoConfig.name}] Local direct json extraction successful`);
-                        localData = repoConfig.fallback;
-                        localDataSourceText = 'Local Fallback (JSON)';
+                        try {
+                            console.log(`[${repoConfig.name}] Attempting extraction from local zip /public/test.zip...`);
+                            const localZipRes = await fetch('/test.zip');
+                            if (localZipRes.ok) {
+                                const zipBlob = await localZipRes.blob();
+                                const zip = await JSZip.loadAsync(zipBlob);
+                                let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoConfig.name) && f.name.endsWith('.json'));
+                                if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+
+                                if (jsonFile) {
+                                    console.log(`[${repoConfig.name}] Local zip jsons extraction successful`);
+                                    localData = JSON.parse(await jsonFile.async('string'));
+                                    localDataSourceText = 'Local Fallback (ZIP)';
+                                }
+                            }
+                        } catch (e) {
+                            console.log(`[${repoConfig.name}] Local zip extraction unsuccessful`);
+                        }
                     }
 
                     liveDataResults.push({ ...processRepo(localData, repoConfig.name), dataSource: localDataSourceText });

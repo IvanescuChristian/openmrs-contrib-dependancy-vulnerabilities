@@ -11,9 +11,11 @@ The app is supposed to have the following logic:
 10. Final product should be completely scaled to the dimension of each user and have no issue.
 11. The Github Api of course is hidden in a .env and inaccessible to the public(also blurred in the display(can`t be copy pasted,sorry:) ) .
 12. The Github Key is taken from .env but if u want to put another one now u can.If the new Key inserted does not function, the key from .env will take its place.
-13. If neither the given nor the .env key work,the Data will be taken from the local folder
-14. GithubAPI - Zip search :  src/public/test.zip ; Direct json search : src/data/.son ( all jsons )
-15. Local - Zip search : /test.zip ; Direct json search /src/data/.json ( all jsons )
+13. If neither the given nor the .env key work,the Data will be taken from the local folder 
+14. GithubAPI - Direct json search : src/data/.son ( all jsons ) ; Zip search :  src/public/test.zip .
+15. Local - Direct json search /src/data/.json ( all jsons ) ; Zip search : /test.zip .
+16. 14. && 15. Represent the order in which the data is looked at.
+
 
 
 VeryFriendlySolver
