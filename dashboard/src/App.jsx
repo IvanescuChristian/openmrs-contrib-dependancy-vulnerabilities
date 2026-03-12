@@ -94,7 +94,6 @@ async function fetchLiveRepoData(repoName, token) {
 
         return jsonContent ? JSON.parse(jsonContent) : null;
     } catch (error) {
-        console.error(error);
         return null;
     }
 }
@@ -106,11 +105,18 @@ const SeverityPill = ({ severity }) => {
     return <span style={{ backgroundColor: s.bg, color: s.text, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-block' }}>{severity}</span>;
 };
 
-const SortableHeader = ({ label, sortKey, currentSortKey, sortOrder, onSort }) => {
-    const isActive = currentSortKey === sortKey;
+const SortableHeader = ({ label, sortKey, sortQueue, onSort }) => {
+    const queueIdx = sortQueue.findIndex(q => q.key === sortKey);
+    const isActive = queueIdx >= 0;
+    const sortOrder = isActive ? sortQueue[queueIdx].order : null;
+    const priorityLabel = sortQueue.length > 0 && isActive ? ` (${queueIdx + 1})` : '';
+
     return (
         <div onClick={() => onSort(sortKey)} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none', color: isActive ? '#0f62fe' : '#161616', fontWeight: '600' }}>
-            {label} <span style={{ fontSize: '10px', color: isActive ? '#0f62fe' : '#a8a8a8' }}>{isActive ? (sortOrder === 'desc' ? '▼' : '▲') : '↕'}</span>
+            {label} <span style={{ fontSize: '10px', color: '#0f62fe', fontWeight: 'bold' }}>{priorityLabel}</span>
+            <span style={{ fontSize: '10px', color: isActive ? '#0f62fe' : '#a8a8a8' }}>
+                {isActive ? (sortOrder === 'desc' ? '▼' : '▲') : '↕'}
+            </span>
         </div>
     );
 };
@@ -120,17 +126,42 @@ const cveGridTemplate = "1.5fr 1fr 1fr 3fr 1.5fr 1fr 1fr";
 
 function DependencyRow({ dep }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [cveSort, setCveSort] = useState({ key: 'severityWeight', order: 'desc' });
-    const handleCveSort = (key) => setCveSort(prev => ({ key, order: prev.key === key && prev.order === 'desc' ? 'asc' : 'desc' }));
-    const sortedCves = useMemo(() => {
-        return [...dep.vulns].sort((a, b) => {
-            let valA = a[cveSort.key], valB = b[cveSort.key];
-            if (valA === '-') valA = ''; if (valB === '-') valB = '';
-            if (typeof valA === 'number' && typeof valB === 'number') return cveSort.order === 'desc' ? valB - valA : valA - valB;
-            const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
-            return cveSort.order === 'desc' ? -cmp : cmp;
+    const [cveSortQueue, setCveSortQueue] = useState([]);
+
+    const handleCveSort = (key) => {
+        setCveSortQueue(prev => {
+            const existingIdx = prev.findIndex(item => item.key === key);
+            if (existingIdx >= 0) {
+                const newOrder = prev[existingIdx].order === 'desc' ? 'asc' : 'desc';
+                const newQueue = prev.filter((_, idx) => idx !== existingIdx);
+                newQueue.push({ key, order: newOrder });
+                return newQueue;
+            }
+            return [...prev, { key, order: 'desc' }];
         });
-    }, [dep.vulns, cveSort]);
+    };
+
+    const sortedCves = useMemo(() => {
+        if (cveSortQueue.length === 0) {
+            return [...dep.vulns].sort((a, b) => b.severityWeight - a.severityWeight);
+        }
+        return [...dep.vulns].sort((a, b) => {
+            for (const sortItem of cveSortQueue) {
+                let valA = a[sortItem.key];
+                let valB = b[sortItem.key];
+                if (valA === '-') valA = '';
+                if (valB === '-') valB = '';
+
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    if (valA !== valB) return sortItem.order === 'desc' ? valB - valA : valA - valB;
+                } else {
+                    const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+                    if (cmp !== 0) return sortItem.order === 'desc' ? -cmp : cmp;
+                }
+            }
+            return 0;
+        });
+    }, [dep.vulns, cveSortQueue]);
 
     return (
         <div style={{ borderBottom: '1px solid #e0e0e0' }}>
@@ -141,8 +172,23 @@ function DependencyRow({ dep }) {
             {isOpen && (
                 <div style={{ padding: '0 24px 24px 60px', backgroundColor: '#fcfcfc' }}>
                     <div style={{ border: '1px solid #e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+
+                        {cveSortQueue.length > 0 && (
+                            <div style={{ padding: '8px 16px', backgroundColor: '#fdfdfd', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button onClick={() => setCveSortQueue([])} style={{ fontSize: '12px', color: '#da1e28', border: '1px solid #da1e28', background: 'transparent', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}>
+                                    Reset Filters
+                                </button>
+                            </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, backgroundColor: '#f4f4f4', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', fontSize: '13px' }}>
-                            <SortableHeader label="CVE ID" sortKey="id" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="Severity" sortKey="severityWeight" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="Score" sortKey="score" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="Description" sortKey="description" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="Affected Versions" sortKey="affected" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="Fixed In" sortKey="fixedIn" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} /><SortableHeader label="CWE" sortKey="cwe" currentSortKey={cveSort.key} sortOrder={cveSort.order} onSort={handleCveSort} />
+                            <SortableHeader label="CVE ID" sortKey="id" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="Severity" sortKey="severityWeight" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="Score" sortKey="score" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="Description" sortKey="description" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="Affected Versions" sortKey="affected" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="Fixed In" sortKey="fixedIn" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <SortableHeader label="CWE" sortKey="cwe" sortQueue={cveSortQueue} onSort={handleCveSort} />
                         </div>
                         {sortedCves.map(v => (
                             <div key={v.id} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
@@ -158,18 +204,48 @@ function DependencyRow({ dep }) {
 
 function RepoAccordion({ repo }) {
     const [isOpen, setIsOpen] = useState(true);
-    const [depSort, setDepSort] = useState({ key: 'maxScore', order: 'desc' });
-    const handleDepSort = (key) => setDepSort(prev => ({ key, order: prev.key === key && prev.order === 'desc' ? 'asc' : 'desc' }));
-    const sortedDependencies = useMemo(() => {
-        return [...repo.dependencies].sort((a, b) => {
-            let valA = a[depSort.key], valB = b[depSort.key];
-            if (depSort.key === 'cves') { valA = a.vulns.length; valB = b.vulns.length; }
-            if (valA === '-') valA = ''; if (valB === '-') valB = '';
-            if (typeof valA === 'number' && typeof valB === 'number') return depSort.order === 'desc' ? valB - valA : valA - valB;
-            const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
-            return depSort.order === 'desc' ? -cmp : cmp;
+    const [depSortQueue, setDepSortQueue] = useState([]);
+
+    const handleDepSort = (key) => {
+        setDepSortQueue(prev => {
+            const existingIdx = prev.findIndex(item => item.key === key);
+            if (existingIdx >= 0) {
+                const newOrder = prev[existingIdx].order === 'desc' ? 'asc' : 'desc';
+                const newQueue = prev.filter((_, idx) => idx !== existingIdx);
+                newQueue.push({ key, order: newOrder });
+                return newQueue;
+            }
+            return [...prev, { key, order: 'desc' }];
         });
-    }, [repo.dependencies, depSort]);
+    };
+
+    const getDepVal = (dep, key) => {
+        if (key === 'cves') return dep.vulns.length;
+        return dep[key];
+    };
+
+    const sortedDependencies = useMemo(() => {
+        if (depSortQueue.length === 0) {
+            return [...repo.dependencies].sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
+        }
+        return [...repo.dependencies].sort((a, b) => {
+            for (const sortItem of depSortQueue) {
+                let valA = getDepVal(a, sortItem.key);
+                let valB = getDepVal(b, sortItem.key);
+
+                if (valA === '-') valA = '';
+                if (valB === '-') valB = '';
+
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    if (valA !== valB) return sortItem.order === 'desc' ? valB - valA : valA - valB;
+                } else {
+                    const cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+                    if (cmp !== 0) return sortItem.order === 'desc' ? -cmp : cmp;
+                }
+            }
+            return 0;
+        });
+    }, [repo.dependencies, depSortQueue]);
 
     return (
         <div style={{ backgroundColor: 'white', border: '1px solid #e0e0e0', marginBottom: '24px' }}>
@@ -178,8 +254,20 @@ function RepoAccordion({ repo }) {
             </div>
             {isOpen && (
                 <div>
+                    {depSortQueue.length > 0 && (
+                        <div style={{ padding: '12px 24px', backgroundColor: '#fcfcfc', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setDepSortQueue([])} style={{ fontSize: '13px', color: '#da1e28', border: '1px solid #da1e28', background: 'transparent', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>
+                                Reset Filters
+                            </button>
+                        </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: depGridTemplate, backgroundColor: '#e0e0e0', padding: '16px 24px', fontSize: '14px' }}>
-                        <SortableHeader label="Dependency" sortKey="name" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} /><SortableHeader label="Version" sortKey="version" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} /><SortableHeader label="Severity" sortKey="maxScore" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} /><SortableHeader label="CVEs" sortKey="cves" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} /><SortableHeader label="Exploit" sortKey="exploit" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} /><SortableHeader label="Fix Version" sortKey="fixVersion" currentSortKey={depSort.key} sortOrder={depSort.order} onSort={handleDepSort} />
+                        <SortableHeader label="Dependency" sortKey="name" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <SortableHeader label="Version" sortKey="version" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <SortableHeader label="Severity" sortKey="maxScore" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <SortableHeader label="CVEs" sortKey="cves" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <SortableHeader label="Exploit" sortKey="exploit" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <SortableHeader label="Fix Version" sortKey="fixVersion" sortQueue={depSortQueue} onSort={handleDepSort} />
                     </div>
                     {sortedDependencies.map(dep => <DependencyRow key={dep.name} dep={dep} />)}
                 </div>
@@ -228,8 +316,10 @@ export default function App() {
     };
 
     return (
-        <div style={{ backgroundColor: '#fafafa', minHeight: '100vh', padding: '40px 20px', fontFamily: '"Inter", "Segoe UI", sans-serif' }}>
-            <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+        // AICI E SECRETUL: position: 'absolute', top: 0, left: 0, width: '100vw'
+        // Asta forțează aplicația să ocupe tot ecranul, indiferent de setările default din Vite!
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, minHeight: '100vh', backgroundColor: '#fafafa', padding: '40px 3%', boxSizing: 'border-box', fontFamily: '"Inter", "Segoe UI", sans-serif', overflowX: 'hidden' }}>
+            <div style={{ width: '100%', margin: '0 auto' }}>
                 <header style={{ marginBottom: '40px' }}>
                     <h1 style={{ fontSize: '42px', color: '#161616', margin: '0 0 16px 0', fontWeight: '400' }}>OpenMRS Dependency Vulnerability Report</h1>
                     <div style={{ height: '6px', width: '80px', backgroundColor: '#008577', marginBottom: '24px' }}></div>
