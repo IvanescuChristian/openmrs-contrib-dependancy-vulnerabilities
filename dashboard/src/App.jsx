@@ -270,7 +270,22 @@ function RepoAccordion({ repo }) {
                     transition: 'background-color 0.2s'
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><h2 style={{ margin: 0, fontSize: '20px', color: '#161616', fontWeight: '600' }}>{repo.name}</h2><SeverityPill severity={repo.maxSeverity} /></div><span style={{ fontSize: '16px', color: '#161616' }}>{isOpen ? '⌃' : '⌄'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <h2 style={{ margin: 0, fontSize: '20px', color: '#161616', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {repo.name}
+                        {/* AICI ESTE ETICHETA VIZUALA CARE ITI ZICE DE UNDE VIN DATELE */}
+                        <span style={{
+                            fontSize: '11px', padding: '4px 8px', borderRadius: '12px',
+                            backgroundColor: repo.dataSource === 'Local Fallback' ? '#ffe5e5' : '#defbe6',
+                            color: repo.dataSource === 'Local Fallback' ? '#da1e28' : '#198038',
+                            fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px'
+                        }}>
+                            {repo.dataSource}
+                        </span>
+                    </h2>
+                    <SeverityPill severity={repo.maxSeverity} />
+                </div>
+                <span style={{ fontSize: '16px', color: '#161616' }}>{isOpen ? '⌃' : '⌄'}</span>
             </div>
             {isOpen && (
                 <div>
@@ -299,9 +314,9 @@ function RepoAccordion({ repo }) {
 export default function App() {
     const staticReports = useMemo(() => {
         return [
-            processRepo(coreData, 'openmrs-core'),
-            processRepo(idgenData, 'openmrs-module-idgen'),
-            processRepo(billingData, 'openmrs-module-billing')
+            { ...processRepo(coreData, 'openmrs-core'), dataSource: 'Local Fallback' },
+            { ...processRepo(idgenData, 'openmrs-module-idgen'), dataSource: 'Local Fallback' },
+            { ...processRepo(billingData, 'openmrs-module-billing'), dataSource: 'Local Fallback' }
         ].sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
     }, []);
 
@@ -329,9 +344,11 @@ export default function App() {
 
                 if (rawJson) {
                     successCount++;
-                    liveDataResults.push(processRepo(rawJson, repoConfig.name));
+                    // Adaugam tag-ul de API extras
+                    liveDataResults.push({ ...processRepo(rawJson, repoConfig.name), dataSource: 'Extracted API' });
                 } else {
-                    liveDataResults.push(processRepo(repoConfig.fallback, repoConfig.name));
+                    // Adaugam tag-ul de fisier local
+                    liveDataResults.push({ ...processRepo(repoConfig.fallback, repoConfig.name), dataSource: 'Local Fallback' });
                 }
             }
 
@@ -373,6 +390,7 @@ export default function App() {
                     <button onClick={handleFetchLive} disabled={isLoading || !token} style={{ padding: '10px 20px', backgroundColor: token ? '#0f62fe' : '#e0e0e0', color: token ? 'white' : '#888', border: 'none', borderRadius: '4px', cursor: token && !isLoading ? 'pointer' : 'not-allowed', fontWeight: '600', marginTop: '16px' }}>
                         {isLoading ? 'Loading...' : 'Fetch Live Data'}
                     </button>
+
                     {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Extracted Data</span>}
                     {!isLoading && fetchStatus === 'partial' && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>Partial Extracted Data</span>}
                     {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Data</span>}
