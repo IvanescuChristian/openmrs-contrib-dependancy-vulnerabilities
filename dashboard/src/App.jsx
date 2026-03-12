@@ -23,20 +23,29 @@ const processRepo = (rawData, name) => {
         if (!acc[pkgName]) {
             acc[pkgName] = { name: pkgName, version: extractSafe(v.location?.dependency?.version), vulns: [], maxScore: 0 };
         }
-        const score = v.cvssScore || v.score || (SEVERITY_WEIGHT[v.severity] * 2.5);
-        const severityWeight = SEVERITY_WEIGHT[v.severity] || 0;
-        if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
-        acc[pkgName].vulns.push({
-            id: extractSafe(v.id),
-            severity: extractSafe(v.severity),
-            severityWeight: severityWeight,
-            score: extractSafe(v.cvssScore || v.score),
-            description: extractSafe(v.description),
-            affected: extractSafe(v.vulnerableVersions || v.vulnerable_versions),
-            fixedIn: extractSafe(v.fixedIn || v.fixed_in),
-            cwe: extractSafe(v.cwe || (v.cwes ? v.cwes[0] : null)),
-            exploit: extractSafe(v.exploit)
-        });
+
+        const safeId = extractSafe(v.id);
+
+        // REPARATIE AICI: Verificăm dacă CVE-ul există deja pentru această dependență (Deduplicare)
+        const isDuplicate = acc[pkgName].vulns.some(existing => existing.id === safeId && safeId !== '-');
+
+        if (!isDuplicate) {
+            const score = v.cvssScore || v.score || (SEVERITY_WEIGHT[v.severity] * 2.5);
+            const severityWeight = SEVERITY_WEIGHT[v.severity] || 0;
+            if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
+
+            acc[pkgName].vulns.push({
+                id: safeId,
+                severity: extractSafe(v.severity),
+                severityWeight: severityWeight,
+                score: extractSafe(v.cvssScore || v.score),
+                description: extractSafe(v.description),
+                affected: extractSafe(v.vulnerableVersions || v.vulnerable_versions),
+                fixedIn: extractSafe(v.fixedIn || v.fixed_in),
+                cwe: extractSafe(v.cwe || (v.cwes ? v.cwes[0] : null)),
+                exploit: extractSafe(v.exploit)
+            });
+        }
         return acc;
     }, {});
 
@@ -55,7 +64,7 @@ const processRepo = (rawData, name) => {
 };
 
 // =========================================================================
-// CASCADA ONLINE (API GitHub)
+// CASCADA DE FETCH + METADATE PENTRU UI (Sursa și Cheia)
 // =========================================================================
 async function fetchLiveRepoData(repoName, browserToken, envToken) {
     const owner = 'IvanescuChristian';
@@ -66,49 +75,70 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
         const headers = { 'Accept': 'application/vnd.github.v3.raw' };
         if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
 
+        // 1. Încercăm arhiva ZIP
         try {
-            console.log(`[${repoName}] ONLINE: Încerc ZIP (${keySourceName})...`);
+            console.log(`[${repoName}] Încerc descărcare ZIP folosind cheia din: ${keySourceName}...`);
             const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
             const zipRes = await fetch(zipUrl, { headers });
+
             if (zipRes.ok) {
                 const zipBlob = await zipRes.blob();
                 const zip = await JSZip.loadAsync(zipBlob);
                 const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+
                 if (jsonFile) {
-                    console.log(`[${repoName}] 🎉 ONLINE Succes: ZIP (${keySourceName}).`);
-                    return { data: JSON.parse(await jsonFile.async('string')), extractMethod: 'ZIP', keyUsed: keySourceName };
+                    console.log(`[${repoName}] 🎉 Succes: ZIP dezarhivat (Cheie: ${keySourceName}).`);
+                    const jsonContent = await jsonFile.async('string');
+                    return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
                 }
-            } else if (zipRes.status === 401 || zipRes.status === 403) throw new Error("TokenInvalid");
+            } else if (zipRes.status === 401 || zipRes.status === 403) {
+                throw new Error("TokenInvalid");
+            }
         } catch (e) {
+            console.log(`[${repoName}] ZIP-ul nu a mers, trec la JSON...`);
             if (e.message === "TokenInvalid") throw e;
         }
 
+        // 2. Încercăm JSON direct
         try {
-            console.log(`[${repoName}] ONLINE: Încerc JSON (${keySourceName})...`);
+            console.log(`[${repoName}] Încerc descărcare JSON direct folosind cheia din: ${keySourceName}...`);
             const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
             const jsonRes = await fetch(jsonUrl, { headers });
+
             if (jsonRes.ok) {
-                console.log(`[${repoName}] 🎉 ONLINE Succes: JSON (${keySourceName}).`);
+                console.log(`[${repoName}] 🎉 Succes: JSON găsit direct pe branch (Cheie: ${keySourceName}).`);
                 return { data: await jsonRes.json(), extractMethod: 'JSON', keyUsed: keySourceName };
-            } else if (jsonRes.status === 401 || jsonRes.status === 403) throw new Error("TokenInvalid");
+            } else if (jsonRes.status === 401 || jsonRes.status === 403) {
+                throw new Error("TokenInvalid");
+            }
         } catch (e) {
+            console.log(`[${repoName}] Nici JSON-ul direct nu a mers.`);
             if (e.message === "TokenInvalid") throw e;
         }
 
         throw new Error("NotFound");
     };
 
+    // START CASCADĂ:
     if (browserToken) {
-        try { return await fetchWithToken(browserToken, 'Browser'); }
-        catch (e) { console.warn(`[${repoName}] ❌ ONLINE: Cheia Browser a eșuat.`); }
+        try {
+            console.log(`[${repoName}] 🟢 Încep secvența cu cheia introdusă în BROWSER...`);
+            return await fetchWithToken(browserToken, 'Browser');
+        } catch (e) {
+            console.warn(`[${repoName}] ❌ Cheia din browser a eșuat (Invalidă/Rate Limit). Trec la .env...`);
+        }
     }
 
     if (envToken && envToken !== browserToken) {
-        try { return await fetchWithToken(envToken, '.env'); }
-        catch (e) { console.warn(`[${repoName}] ❌ ONLINE: Cheia .env a eșuat.`); }
+        try {
+            console.log(`[${repoName}] 🟡 Încep secvența cu cheia ascunsă din .ENV...`);
+            return await fetchWithToken(envToken, '.env');
+        } catch (e) {
+            console.warn(`[${repoName}] ❌ Cheia din .env a eșuat.`);
+        }
     }
 
-    console.error(`[${repoName}] 🔴 ONLINE a eșuat complet. Se trece pe Local Fallback.`);
+    console.error(`[${repoName}] 🔴 Toate metodele online au eșuat. Se declanșează Local Fallback.`);
     return null;
 }
 // =========================================================================
@@ -205,8 +235,9 @@ function DependencyRow({ dep }) {
                             <SortableHeader label="Fixed In" sortKey="fixedIn" sortQueue={cveSortQueue} onSort={handleCveSort} />
                             <SortableHeader label="CWE" sortKey="cwe" sortQueue={cveSortQueue} onSort={handleCveSort} />
                         </div>
-                        {sortedCves.map(v => (
-                            <div key={v.id} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
+                        {/* REPARATIE AICI: adăugăm și indexul la 'key' ca să garantăm unicitatea absolută a rândului din React */}
+                        {sortedCves.map((v, idx) => (
+                            <div key={`${v.id}-${idx}`} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
                                 <a href={`https://nvd.nist.gov/vuln/detail/${v.id}`} target="_blank" rel="noreferrer" style={{ color: '#0f62fe', textDecoration: 'underline' }}>{v.id}</a><div><SeverityPill severity={v.severity} /></div><div>{v.score !== '-' ? `${v.score}/10` : '-'}</div><div style={{ paddingRight: '20px', lineHeight: '1.4' }}>{v.description}</div><div>{v.affected}</div><div>{v.fixedIn}</div><div>{v.cwe}</div>
                             </div>
                         ))}
