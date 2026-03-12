@@ -29,7 +29,6 @@ const processRepo = (rawData, name) => {
 
         if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
 
-        // Am readus inserarea ORIGINALĂ: nu mai tăiem duplicatele, păstrăm tot ce dă JSON-ul
         acc[pkgName].vulns.push({
             id: v.id || '-',
             severity: v.severity || '-',
@@ -226,7 +225,6 @@ function DependencyRow({ dep }) {
                         </div>
 
                         {sortedCves.map((v, idx) => (
-                            /* Am rezolvat eroarea React din consola combinand ID-ul CVE-ului cu un index strict garantat de hartă, plus Math.random() pentru a fi 100% siguri */
                             <div key={`${v.id}-${idx}-${Math.random()}`} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
                                 <a href={`https://nvd.nist.gov/vuln/detail/${v.id}`} target="_blank" rel="noreferrer" style={{ color: '#0f62fe', textDecoration: 'underline' }}>{v.id}</a><div><SeverityType severity={v.severity} /></div><div>{v.score !== '-' ? `${v.score}/10` : '-'}</div><div style={{ paddingRight: '20px', lineHeight: '1.4' }}>{v.description}</div><div>{v.affected}</div><div>{v.fixedIn}</div><div>{v.cwe}</div>
                             </div>
