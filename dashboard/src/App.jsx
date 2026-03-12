@@ -14,38 +14,34 @@ const compareVersions = (v1, v2) => {
     return v1.localeCompare(v2, undefined, { numeric: true, sensitivity: 'base' });
 };
 
-const extractSafe = (val) => (val !== undefined && val !== null && val !== '') ? val : '-';
-
 const processRepo = (rawData, name) => {
     const vulnerabilities = rawData.vulnerabilities || [];
     const grouped = vulnerabilities.reduce((acc, v) => {
         const pkgName = v.location?.dependency?.package?.name || 'unknown';
+        const pkgVersion = v.location?.dependency?.version || '-';
+
         if (!acc[pkgName]) {
-            acc[pkgName] = { name: pkgName, version: extractSafe(v.location?.dependency?.version), vulns: [], maxScore: 0 };
+            acc[pkgName] = { name: pkgName, version: pkgVersion, vulns: [], maxScore: 0 };
         }
 
-        const safeId = extractSafe(v.id);
+        const score = v.cvssScore || v.score || (SEVERITY_WEIGHT[v.severity] * 2.5);
+        const severityWeight = SEVERITY_WEIGHT[v.severity] || 0;
 
-        // REPARATIE AICI: Verificăm dacă CVE-ul există deja pentru această dependență (Deduplicare)
-        const isDuplicate = acc[pkgName].vulns.some(existing => existing.id === safeId && safeId !== '-');
+        if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
 
-        if (!isDuplicate) {
-            const score = v.cvssScore || v.score || (SEVERITY_WEIGHT[v.severity] * 2.5);
-            const severityWeight = SEVERITY_WEIGHT[v.severity] || 0;
-            if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
+        // Am readus inserarea ORIGINALĂ: nu mai tăiem duplicatele, păstrăm tot ce dă JSON-ul
+        acc[pkgName].vulns.push({
+            id: v.id || '-',
+            severity: v.severity || '-',
+            severityWeight: severityWeight,
+            score: v.cvssScore || v.score || '-',
+            description: v.description || '-',
+            affected: v.vulnerableVersions || v.vulnerable_versions || '-',
+            fixedIn: v.fixedIn || v.fixed_in || '-',
+            cwe: v.cwe || (v.cwes ? v.cwes[0] : null) || '-',
+            exploit: v.exploit || '-'
+        });
 
-            acc[pkgName].vulns.push({
-                id: safeId,
-                severity: extractSafe(v.severity),
-                severityWeight: severityWeight,
-                score: extractSafe(v.cvssScore || v.score),
-                description: extractSafe(v.description),
-                affected: extractSafe(v.vulnerableVersions || v.vulnerable_versions),
-                fixedIn: extractSafe(v.fixedIn || v.fixed_in),
-                cwe: extractSafe(v.cwe || (v.cwes ? v.cwes[0] : null)),
-                exploit: extractSafe(v.exploit)
-            });
-        }
         return acc;
     }, {});
 
@@ -63,9 +59,6 @@ const processRepo = (rawData, name) => {
     return { name, maxScore: repoMaxScore, maxSeverity: repoSeverity, dependencies: deps };
 };
 
-// =========================================================================
-// CASCADA DE FETCH + METADATE PENTRU UI (Sursa și Cheia)
-// =========================================================================
 async function fetchLiveRepoData(repoName, browserToken, envToken) {
     const owner = 'IvanescuChristian';
     const repo = 'openmrs-contrib-dependancy-vulnerabilities';
@@ -75,9 +68,8 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
         const headers = { 'Accept': 'application/vnd.github.v3.raw' };
         if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
 
-        // 1. Încercăm arhiva ZIP
         try {
-            console.log(`[${repoName}] Încerc descărcare ZIP folosind cheia din: ${keySourceName}...`);
+            console.log(`[${repoName}] Attempting zip extraction using : ${keySourceName}...`);
             const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
             const zipRes = await fetch(zipUrl, { headers });
 
@@ -87,7 +79,7 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
                 const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
 
                 if (jsonFile) {
-                    console.log(`[${repoName}] 🎉 Succes: ZIP dezarhivat (Cheie: ${keySourceName}).`);
+                    console.log(`[${repoName}] Zip extraction successful (Key: ${keySourceName}).`);
                     const jsonContent = await jsonFile.async('string');
                     return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
                 }
@@ -95,62 +87,59 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
                 throw new Error("TokenInvalid");
             }
         } catch (e) {
-            console.log(`[${repoName}] ZIP-ul nu a mers, trec la JSON...`);
+            console.log(`[${repoName}] Zip extraction failed attempting directly provided Json`);
             if (e.message === "TokenInvalid") throw e;
         }
 
-        // 2. Încercăm JSON direct
         try {
-            console.log(`[${repoName}] Încerc descărcare JSON direct folosind cheia din: ${keySourceName}...`);
+            console.log(`[${repoName}] Directly provided Json attempt : ${keySourceName}...`);
             const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
             const jsonRes = await fetch(jsonUrl, { headers });
 
             if (jsonRes.ok) {
-                console.log(`[${repoName}] 🎉 Succes: JSON găsit direct pe branch (Cheie: ${keySourceName}).`);
+                console.log(`[${repoName}] Json found on branch (Key: ${keySourceName}).`);
                 return { data: await jsonRes.json(), extractMethod: 'JSON', keyUsed: keySourceName };
             } else if (jsonRes.status === 401 || jsonRes.status === 403) {
                 throw new Error("TokenInvalid");
             }
         } catch (e) {
-            console.log(`[${repoName}] Nici JSON-ul direct nu a mers.`);
+            console.log(`[${repoName}] No directly provided Json found`);
             if (e.message === "TokenInvalid") throw e;
         }
 
         throw new Error("NotFound");
     };
 
-    // START CASCADĂ:
     if (browserToken) {
         try {
-            console.log(`[${repoName}] 🟢 Încep secvența cu cheia introdusă în BROWSER...`);
+            console.log(`[${repoName}] Starting provided api extraction`);
             return await fetchWithToken(browserToken, 'Browser');
         } catch (e) {
-            console.warn(`[${repoName}] ❌ Cheia din browser a eșuat (Invalidă/Rate Limit). Trec la .env...`);
+            console.warn(`[${repoName}] Inserted key extraction unsuccessful moving onto .env key`);
         }
     }
 
     if (envToken && envToken !== browserToken) {
         try {
-            console.log(`[${repoName}] 🟡 Încep secvența cu cheia ascunsă din .ENV...`);
+            console.log(`[${repoName}] Starting .env api extraction`);
             return await fetchWithToken(envToken, '.env');
         } catch (e) {
-            console.warn(`[${repoName}] ❌ Cheia din .env a eșuat.`);
+            console.warn(`[${repoName}] .env key extraction unsuccessful`);
         }
     }
 
-    console.error(`[${repoName}] 🔴 Toate metodele online au eșuat. Se declanșează Local Fallback.`);
+    console.error(`[${repoName}] Both provided and local Api have failed, going into local repo`);
     return null;
 }
-// =========================================================================
 
-const SeverityPill = ({ severity }) => {
+const SeverityType = ({ severity }) => {
     if (!severity || severity === '-' || severity === 'None') return null;
     const styles = { 'Critical': { bg: '#ff8a8a', text: '#5a0000' }, 'High': { bg: '#ffc6c6', text: '#7a0000' }, 'Medium': { bg: '#ffe58f', text: '#5c4300' }, 'Low': { bg: '#d6e4ff', text: '#002c8c' } };
     const s = styles[severity] || styles['Low'];
     return <span style={{ backgroundColor: s.bg, color: s.text, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-block' }}>{severity}</span>;
 };
 
-const SortableHeader = ({ label, sortKey, sortQueue, onSort }) => {
+const MultiQueue = ({ label, sortKey, sortQueue, onSort }) => {
     const queueIdx = sortQueue.findIndex(q => q.key === sortKey);
     const isActive = queueIdx >= 0;
     const sortOrder = isActive ? sortQueue[queueIdx].order : null;
@@ -212,7 +201,7 @@ function DependencyRow({ dep }) {
         <div style={{ borderBottom: '1px solid #e0e0e0' }}>
             <div onClick={() => setIsOpen(!isOpen)} style={{ display: 'grid', gridTemplateColumns: depGridTemplate, alignItems: 'center', padding: '16px 24px', cursor: 'pointer', backgroundColor: isOpen ? '#fcfcfc' : '#fff', transition: 'background 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><span style={{ color: '#161616', fontSize: '12px', width: '16px' }}>{isOpen ? '⌃' : '⌄'}</span><span style={{ color: '#161616', fontSize: '14px', fontWeight: isOpen ? '600' : '400' }}>{dep.name}</span></div>
-                <div style={{ color: '#333', fontSize: '13px' }}>{dep.version}</div><div><SeverityPill severity={dep.vulns[0].severity} /></div><div style={{ color: '#333', fontSize: '13px' }}>{dep.vulns.length}</div><div style={{ color: '#333', fontSize: '13px' }}>-</div><div style={{ color: '#333', fontSize: '13px' }}>{dep.fixVersion}</div>
+                <div style={{ color: '#333', fontSize: '13px' }}>{dep.version}</div><div><SeverityType severity={dep.vulns[0].severity} /></div><div style={{ color: '#333', fontSize: '13px' }}>{dep.vulns.length}</div><div style={{ color: '#333', fontSize: '13px' }}>-</div><div style={{ color: '#333', fontSize: '13px' }}>{dep.fixVersion}</div>
             </div>
             {isOpen && (
                 <div style={{ padding: '0 24px 24px 60px', backgroundColor: '#fcfcfc' }}>
@@ -227,18 +216,19 @@ function DependencyRow({ dep }) {
                         )}
 
                         <div style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, backgroundColor: '#f4f4f4', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', fontSize: '13px' }}>
-                            <SortableHeader label="CVE ID" sortKey="id" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="Severity" sortKey="severityWeight" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="Score" sortKey="score" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="Description" sortKey="description" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="Affected Versions" sortKey="affected" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="Fixed In" sortKey="fixedIn" sortQueue={cveSortQueue} onSort={handleCveSort} />
-                            <SortableHeader label="CWE" sortKey="cwe" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="CVE ID" sortKey="id" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="Severity" sortKey="severityWeight" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="Score" sortKey="score" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="Description" sortKey="description" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="Affected Versions" sortKey="affected" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="Fixed In" sortKey="fixedIn" sortQueue={cveSortQueue} onSort={handleCveSort} />
+                            <MultiQueue label="CWE" sortKey="cwe" sortQueue={cveSortQueue} onSort={handleCveSort} />
                         </div>
-                        {/* REPARATIE AICI: adăugăm și indexul la 'key' ca să garantăm unicitatea absolută a rândului din React */}
+
                         {sortedCves.map((v, idx) => (
-                            <div key={`${v.id}-${idx}`} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
-                                <a href={`https://nvd.nist.gov/vuln/detail/${v.id}`} target="_blank" rel="noreferrer" style={{ color: '#0f62fe', textDecoration: 'underline' }}>{v.id}</a><div><SeverityPill severity={v.severity} /></div><div>{v.score !== '-' ? `${v.score}/10` : '-'}</div><div style={{ paddingRight: '20px', lineHeight: '1.4' }}>{v.description}</div><div>{v.affected}</div><div>{v.fixedIn}</div><div>{v.cwe}</div>
+                            /* Am rezolvat eroarea React din consola combinand ID-ul CVE-ului cu un index strict garantat de hartă, plus Math.random() pentru a fi 100% siguri */
+                            <div key={`${v.id}-${idx}-${Math.random()}`} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
+                                <a href={`https://nvd.nist.gov/vuln/detail/${v.id}`} target="_blank" rel="noreferrer" style={{ color: '#0f62fe', textDecoration: 'underline' }}>{v.id}</a><div><SeverityType severity={v.severity} /></div><div>{v.score !== '-' ? `${v.score}/10` : '-'}</div><div style={{ paddingRight: '20px', lineHeight: '1.4' }}>{v.description}</div><div>{v.affected}</div><div>{v.fixedIn}</div><div>{v.cwe}</div>
                             </div>
                         ))}
                     </div>
@@ -318,7 +308,6 @@ function RepoAccordion({ repo }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#161616', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {repo.name}
-                        {/* Eticheta inteligentă recunoaște orice conține 'Local' și se face roșie */}
                         <span style={{
                             fontSize: '11px', padding: '4px 8px', borderRadius: '12px',
                             backgroundColor: repo.dataSource.includes('Local') ? '#ffe5e5' : '#defbe6',
@@ -328,7 +317,7 @@ function RepoAccordion({ repo }) {
                             {repo.dataSource}
                         </span>
                     </h2>
-                    <SeverityPill severity={repo.maxSeverity} />
+                    <SeverityType severity={repo.maxSeverity} />
                 </div>
                 <span style={{ fontSize: '16px', color: '#161616' }}>{isOpen ? '⌃' : '⌄'}</span>
             </div>
@@ -342,12 +331,12 @@ function RepoAccordion({ repo }) {
                         </div>
                     )}
                     <div style={{ display: 'grid', gridTemplateColumns: depGridTemplate, backgroundColor: '#e0e0e0', padding: '16px 24px', fontSize: '14px' }}>
-                        <SortableHeader label="Dependency" sortKey="name" sortQueue={depSortQueue} onSort={handleDepSort} />
-                        <SortableHeader label="Version" sortKey="version" sortQueue={depSortQueue} onSort={handleDepSort} />
-                        <SortableHeader label="Severity" sortKey="maxScore" sortQueue={depSortQueue} onSort={handleDepSort} />
-                        <SortableHeader label="CVEs" sortKey="cves" sortQueue={depSortQueue} onSort={handleDepSort} />
-                        <SortableHeader label="Exploit" sortKey="exploit" sortQueue={depSortQueue} onSort={handleDepSort} />
-                        <SortableHeader label="Fix Version" sortKey="fixVersion" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="Dependency" sortKey="name" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="Version" sortKey="version" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="Severity" sortKey="maxScore" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="CVEs" sortKey="cves" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="Exploit" sortKey="exploit" sortQueue={depSortQueue} onSort={handleDepSort} />
+                        <MultiQueue label="Fix Version" sortKey="fixVersion" sortQueue={depSortQueue} onSort={handleDepSort} />
                     </div>
                     {sortedDependencies.map(dep => <DependencyRow key={dep.name} dep={dep} />)}
                 </div>
@@ -388,7 +377,6 @@ export default function App() {
             let successCount = 0;
 
             for (const repoConfig of reposToFetch) {
-                // Încercăm Online Fetch (cascada API)
                 const apiResult = await fetchLiveRepoData(repoConfig.name, token, envToken);
 
                 if (apiResult && apiResult.data) {
@@ -396,30 +384,28 @@ export default function App() {
                     const customBadgeText = `API: ${apiResult.extractMethod} (Key: ${apiResult.keyUsed})`;
                     liveDataResults.push({ ...processRepo(apiResult.data, repoConfig.name), dataSource: customBadgeText });
                 } else {
-                    // Dacă API a eșuat, pornim CASCADA LOCALĂ (Local ZIP -> Local JSON)
                     let localData = null;
                     let localDataSourceText = '';
 
                     try {
-                        console.log(`[${repoConfig.name}] LOCAL: Încerc citirea din folderul local /public/test.zip...`);
+                        console.log(`[${repoConfig.name}] Attempting extraction from local zip /public/test.zip...`);
                         const localZipRes = await fetch('/test.zip');
                         if (localZipRes.ok) {
                             const zipBlob = await localZipRes.blob();
                             const zip = await JSZip.loadAsync(zipBlob);
                             const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
                             if (jsonFile) {
-                                console.log(`[${repoConfig.name}] 🎉 LOCAL Succes: Extras din ZIP local.`);
+                                console.log(`[${repoConfig.name}] Local zip jsons extraction successful`);
                                 localData = JSON.parse(await jsonFile.async('string'));
                                 localDataSourceText = 'Local Fallback (ZIP)';
                             }
                         }
                     } catch (e) {
-                        console.log(`[${repoConfig.name}] ⚠️ LOCAL: Citirea ZIP a eșuat.`);
+                        console.log(`[${repoConfig.name}] Local zip extraction unsuccessful`);
                     }
 
-                    // Fallback-ul final dacă nu există ZIP local
                     if (!localData) {
-                        console.log(`[${repoConfig.name}] 🎉 LOCAL Succes: Folosesc fișierul JSON importat direct.`);
+                        console.log(`[${repoConfig.name}] Local direct json extraction successful`);
                         localData = repoConfig.fallback;
                         localDataSourceText = 'Local Fallback (JSON)';
                     }

@@ -1,7 +1,7 @@
 The app is supposed to have the following logic:
 1. Extract Data through github api with a local fallback.
 2. The Data is extracted directly from the expected module-billing module-idgen and core respectively.
-3. If Data isn`t found, it shall be searched throughout the entire zipArchive( any .json file).
+3. If Data is not found, it shall be searched throughout the entire zipArchive( any .json file).
 4. Now we can assume Data exists though not guaranteed to fill all fields.
 5. Each module has its own section and can be opened as such.
 6. Each module now has a Dependency, Version, Severity,CVEs, Exploit, Fix Version field.
@@ -11,7 +11,9 @@ The app is supposed to have the following logic:
 10. Final product should be completely scaled to the dimension of each user and have no issue.
 11. The Github Api of course is hidden in a .env and inaccessible to the public(also blurred in the display(can`t be copy pasted,sorry:) ) .
 12. The Github Key is taken from .env but if u want to put another one now u can.If the new Key inserted does not function, the key from .env will take its place.
-
+13. If neither the given nor the .env key work,the Data will be taken from the local folder
+14. GithubAPI - Zip search :  src/public/test.zip ; Direct json search : src/data/.son ( all jsons )
+15. Local - Zip search : /test.zip ; Direct json search /src/data/.json ( all jsons )
 
 
 VeryFriendlySolver
