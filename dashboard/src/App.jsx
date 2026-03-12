@@ -54,50 +54,64 @@ const processRepo = (rawData, name) => {
     return { name, maxScore: repoMaxScore, maxSeverity: repoSeverity, dependencies: deps };
 };
 
-async function fetchLiveRepoData(repoName, token) {
-    const headers = { 'Accept': 'application/vnd.github.v3+json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+// =========================================================================
+// CASCADA ONLINE (API GitHub)
+// =========================================================================
+async function fetchLiveRepoData(repoName, browserToken, envToken) {
+    const owner = 'IvanescuChristian';
+    const repo = 'openmrs-contrib-dependancy-vulnerabilities';
+    const basePath = 'dashboard/src';
 
-    try {
-        const runsRes = await fetch(`https://api.github.com/repos/openmrs/${repoName}/actions/runs?status=success&per_page=30`, { headers });
-        if (!runsRes.ok) throw new Error(`API error for ${repoName}`);
-        const runsData = await runsRes.json();
-        if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) return null;
+    const fetchWithToken = async (currentToken, keySourceName) => {
+        const headers = { 'Accept': 'application/vnd.github.v3.raw' };
+        if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
 
-        let targetArtifact = null;
-        for (const run of runsData.workflow_runs) {
-            const artifactsRes = await fetch(run.artifacts_url, { headers });
-            const artifactsData = await artifactsRes.json();
-            if (artifactsData.artifacts && artifactsData.artifacts.length > 0) {
-                targetArtifact = artifactsData.artifacts.find(a =>
-                    a.name.toLowerCase().includes('report') || a.name.toLowerCase().includes('dependency')
-                );
-                if (targetArtifact) break;
-            }
+        try {
+            console.log(`[${repoName}] ONLINE: Încerc ZIP (${keySourceName})...`);
+            const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
+            const zipRes = await fetch(zipUrl, { headers });
+            if (zipRes.ok) {
+                const zipBlob = await zipRes.blob();
+                const zip = await JSZip.loadAsync(zipBlob);
+                const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+                if (jsonFile) {
+                    console.log(`[${repoName}] 🎉 ONLINE Succes: ZIP (${keySourceName}).`);
+                    return { data: JSON.parse(await jsonFile.async('string')), extractMethod: 'ZIP', keyUsed: keySourceName };
+                }
+            } else if (zipRes.status === 401 || zipRes.status === 403) throw new Error("TokenInvalid");
+        } catch (e) {
+            if (e.message === "TokenInvalid") throw e;
         }
 
-        if (!targetArtifact) return null;
-
-        const zipRes = await fetch(targetArtifact.archive_download_url, { headers });
-        if (!zipRes.ok) throw new Error('Download failed');
-        const zipBlob = await zipRes.blob();
-        const zip = await JSZip.loadAsync(zipBlob);
-
-        let jsonContent = null;
-        const expectedPath = `${repoName}/vulnerability-report.json`;
-
-        if (zip.files[expectedPath]) {
-            jsonContent = await zip.files[expectedPath].async('string');
-        } else {
-            const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json'));
-            if (jsonFile) jsonContent = await jsonFile.async('string');
+        try {
+            console.log(`[${repoName}] ONLINE: Încerc JSON (${keySourceName})...`);
+            const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
+            const jsonRes = await fetch(jsonUrl, { headers });
+            if (jsonRes.ok) {
+                console.log(`[${repoName}] 🎉 ONLINE Succes: JSON (${keySourceName}).`);
+                return { data: await jsonRes.json(), extractMethod: 'JSON', keyUsed: keySourceName };
+            } else if (jsonRes.status === 401 || jsonRes.status === 403) throw new Error("TokenInvalid");
+        } catch (e) {
+            if (e.message === "TokenInvalid") throw e;
         }
 
-        return jsonContent ? JSON.parse(jsonContent) : null;
-    } catch (error) {
-        return null;
+        throw new Error("NotFound");
+    };
+
+    if (browserToken) {
+        try { return await fetchWithToken(browserToken, 'Browser'); }
+        catch (e) { console.warn(`[${repoName}] ❌ ONLINE: Cheia Browser a eșuat.`); }
     }
+
+    if (envToken && envToken !== browserToken) {
+        try { return await fetchWithToken(envToken, '.env'); }
+        catch (e) { console.warn(`[${repoName}] ❌ ONLINE: Cheia .env a eșuat.`); }
+    }
+
+    console.error(`[${repoName}] 🔴 ONLINE a eșuat complet. Se trece pe Local Fallback.`);
+    return null;
 }
+// =========================================================================
 
 const SeverityPill = ({ severity }) => {
     if (!severity || severity === '-' || severity === 'None') return null;
@@ -273,11 +287,11 @@ function RepoAccordion({ repo }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#161616', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {repo.name}
-                        {/* AICI ESTE ETICHETA VIZUALA CARE ITI ZICE DE UNDE VIN DATELE */}
+                        {/* Eticheta inteligentă recunoaște orice conține 'Local' și se face roșie */}
                         <span style={{
                             fontSize: '11px', padding: '4px 8px', borderRadius: '12px',
-                            backgroundColor: repo.dataSource === 'Local Fallback' ? '#ffe5e5' : '#defbe6',
-                            color: repo.dataSource === 'Local Fallback' ? '#da1e28' : '#198038',
+                            backgroundColor: repo.dataSource.includes('Local') ? '#ffe5e5' : '#defbe6',
+                            color: repo.dataSource.includes('Local') ? '#da1e28' : '#198038',
                             fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px'
                         }}>
                             {repo.dataSource}
@@ -314,14 +328,17 @@ function RepoAccordion({ repo }) {
 export default function App() {
     const staticReports = useMemo(() => {
         return [
-            { ...processRepo(coreData, 'openmrs-core'), dataSource: 'Local Fallback' },
-            { ...processRepo(idgenData, 'openmrs-module-idgen'), dataSource: 'Local Fallback' },
-            { ...processRepo(billingData, 'openmrs-module-billing'), dataSource: 'Local Fallback' }
+            { ...processRepo(coreData, 'openmrs-core'), dataSource: 'Local Fallback (JSON)' },
+            { ...processRepo(idgenData, 'openmrs-module-idgen'), dataSource: 'Local Fallback (JSON)' },
+            { ...processRepo(billingData, 'openmrs-module-billing'), dataSource: 'Local Fallback (JSON)' }
         ].sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
     }, []);
 
     const [reports, setReports] = useState(staticReports);
-    const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || '');
+
+    const [token, setToken] = useState('');
+    const envToken = import.meta.env.VITE_GITHUB_TOKEN || '';
+
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [fetchStatus, setFetchStatus] = useState(null);
@@ -340,15 +357,43 @@ export default function App() {
             let successCount = 0;
 
             for (const repoConfig of reposToFetch) {
-                const rawJson = await fetchLiveRepoData(repoConfig.name, token);
+                // Încercăm Online Fetch (cascada API)
+                const apiResult = await fetchLiveRepoData(repoConfig.name, token, envToken);
 
-                if (rawJson) {
+                if (apiResult && apiResult.data) {
                     successCount++;
-                    // Adaugam tag-ul de API extras
-                    liveDataResults.push({ ...processRepo(rawJson, repoConfig.name), dataSource: 'Extracted API' });
+                    const customBadgeText = `API: ${apiResult.extractMethod} (Key: ${apiResult.keyUsed})`;
+                    liveDataResults.push({ ...processRepo(apiResult.data, repoConfig.name), dataSource: customBadgeText });
                 } else {
-                    // Adaugam tag-ul de fisier local
-                    liveDataResults.push({ ...processRepo(repoConfig.fallback, repoConfig.name), dataSource: 'Local Fallback' });
+                    // Dacă API a eșuat, pornim CASCADA LOCALĂ (Local ZIP -> Local JSON)
+                    let localData = null;
+                    let localDataSourceText = '';
+
+                    try {
+                        console.log(`[${repoConfig.name}] LOCAL: Încerc citirea din folderul local /public/test.zip...`);
+                        const localZipRes = await fetch('/test.zip');
+                        if (localZipRes.ok) {
+                            const zipBlob = await localZipRes.blob();
+                            const zip = await JSZip.loadAsync(zipBlob);
+                            const jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+                            if (jsonFile) {
+                                console.log(`[${repoConfig.name}] 🎉 LOCAL Succes: Extras din ZIP local.`);
+                                localData = JSON.parse(await jsonFile.async('string'));
+                                localDataSourceText = 'Local Fallback (ZIP)';
+                            }
+                        }
+                    } catch (e) {
+                        console.log(`[${repoConfig.name}] ⚠️ LOCAL: Citirea ZIP a eșuat.`);
+                    }
+
+                    // Fallback-ul final dacă nu există ZIP local
+                    if (!localData) {
+                        console.log(`[${repoConfig.name}] 🎉 LOCAL Succes: Folosesc fișierul JSON importat direct.`);
+                        localData = repoConfig.fallback;
+                        localDataSourceText = 'Local Fallback (JSON)';
+                    }
+
+                    liveDataResults.push({ ...processRepo(localData, repoConfig.name), dataSource: localDataSourceText });
                 }
             }
 
@@ -387,7 +432,7 @@ export default function App() {
                             style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc' }}
                         />
                     </div>
-                    <button onClick={handleFetchLive} disabled={isLoading || !token} style={{ padding: '10px 20px', backgroundColor: token ? '#0f62fe' : '#e0e0e0', color: token ? 'white' : '#888', border: 'none', borderRadius: '4px', cursor: token && !isLoading ? 'pointer' : 'not-allowed', fontWeight: '600', marginTop: '16px' }}>
+                    <button onClick={handleFetchLive} disabled={isLoading} style={{ padding: '10px 20px', backgroundColor: '#0f62fe', color: 'white', border: 'none', borderRadius: '4px', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: '600', marginTop: '16px' }}>
                         {isLoading ? 'Loading...' : 'Fetch Live Data'}
                     </button>
 
