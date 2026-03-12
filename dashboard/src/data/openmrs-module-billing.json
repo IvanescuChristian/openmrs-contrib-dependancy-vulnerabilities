@@ -81,7 +81,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2017-12796",
@@ -130,7 +136,14 @@
           "name": "VENDOR_ADVISORY",
           "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-502"
+      ],
+      "cvssScore": 9.8,
+      "exploit": "Yes",
+      "vulnerableVersions": "< 2.6.1",
+      "fixedIn": "2.6.1"
     },
     {
       "id": "CVE-2021-43094",
@@ -152,7 +165,7 @@
         }
       },
       "name": "CVE-2021-43094",
-      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition \u003C=2.11 and Platform Standalone Edition \u003C=2.4.0 via GET requests on arbitrary parameters in patient.page.",
+      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition <=2.11 and Platform Standalone Edition <=2.4.0 via GET requests on arbitrary parameters in patient.page.",
       "severity": "Critical",
       "links": [
         {
@@ -179,7 +192,12 @@
           "name": "VENDOR_ADVISORY",
           "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-89"
+      ],
+      "cvssScore": 9.8,
+      "vulnerableVersions": "<= 2.4.0, <= 2.11"
     },
     {
       "id": "CVE-2022-23612",
@@ -236,7 +254,14 @@
           "name": "PATCH,THIRD_PARTY_ADVISORY",
           "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-22"
+      ],
+      "cvssScore": 7.5,
+      "exploit": "Yes",
+      "vulnerableVersions": ">= 1.6 and < 2.1.5, >= 2.2.0 and < 2.2.1, >= 2.3.0 and < 2.3.5, >= 2.4.0 and < 2.4.5, >= 2.5.0 and < 2.5.3",
+      "fixedIn": "2.1.5"
     },
     {
       "id": "CVE-2020-5728",
@@ -269,7 +294,14 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-20",
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5729",
@@ -302,7 +334,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5730",
@@ -335,7 +373,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5731",
@@ -368,7 +412,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5732",
@@ -401,7 +451,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-601"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5733",
@@ -434,7 +490,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-601"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2017-12796",
@@ -483,7 +545,14 @@
           "name": "VENDOR_ADVISORY",
           "url": "https://talk.openmrs.org/t/critical-security-advisory-2017-09-12/13291"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-502"
+      ],
+      "cvssScore": 9.8,
+      "exploit": "Yes",
+      "vulnerableVersions": "< 2.6.1",
+      "fixedIn": "2.6.1"
     },
     {
       "id": "CVE-2021-43094",
@@ -505,7 +574,7 @@
         }
       },
       "name": "CVE-2021-43094",
-      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition \u003C=2.11 and Platform Standalone Edition \u003C=2.4.0 via GET requests on arbitrary parameters in patient.page.",
+      "description": "An SQL Injection vulnerability exists in OpenMRS Reference Application Standalone Edition <=2.11 and Platform Standalone Edition <=2.4.0 via GET requests on arbitrary parameters in patient.page.",
       "severity": "Critical",
       "links": [
         {
@@ -532,7 +601,12 @@
           "name": "VENDOR_ADVISORY",
           "url": "https://wiki.openmrs.org/display/docs/Reporting+Bugs"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-89"
+      ],
+      "cvssScore": 9.8,
+      "vulnerableVersions": "<= 2.4.0, <= 2.11"
     },
     {
       "id": "CVE-2022-23612",
@@ -589,7 +663,14 @@
           "name": "PATCH,THIRD_PARTY_ADVISORY",
           "url": "https://lgtm.com/projects/g/openmrs/openmrs-core/snapshot/fb1335c925ca4c94be5a546707b90d2c1efa4dcc/files/web/src/main/java/org/openmrs/web/filter/StartupFilter.java#L123"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-22"
+      ],
+      "cvssScore": 7.5,
+      "exploit": "Yes",
+      "vulnerableVersions": ">= 1.6 and < 2.1.5, >= 2.2.0 and < 2.2.1, >= 2.3.0 and < 2.3.5, >= 2.4.0 and < 2.4.5, >= 2.5.0 and < 2.5.3",
+      "fixedIn": "2.1.5"
     },
     {
       "id": "CVE-2020-5728",
@@ -622,7 +703,14 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-20",
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5729",
@@ -655,7 +743,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5730",
@@ -688,7 +782,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5731",
@@ -721,7 +821,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-79"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5732",
@@ -754,7 +860,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-601"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2020-5733",
@@ -787,7 +899,13 @@
           "name": "EXPLOIT,THIRD_PARTY_ADVISORY",
           "url": "https://www.tenable.com/security/research/tra-2020-18"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-601"
+      ],
+      "cvssScore": 6.1,
+      "exploit": "Yes",
+      "vulnerableVersions": "<= 2.9.0"
     },
     {
       "id": "CVE-2023-6298",
@@ -844,7 +962,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2023-6298",
@@ -901,7 +1025,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2023-6298",
@@ -958,7 +1088,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2023-6298",
@@ -1015,7 +1151,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2023-6298",
@@ -1072,7 +1214,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     },
     {
       "id": "CVE-2023-6298",
@@ -1129,7 +1277,13 @@
           "name": "THIRD_PARTY_ADVISORY",
           "url": "https://vuldb.com/?id.246124"
         }
-      ]
+      ],
+      "cwes": [
+        "CWE-129"
+      ],
+      "cvssScore": 4.3,
+      "exploit": "Yes",
+      "vulnerableVersions": "8.0.2"
     }
   ],
   "dependency_files": [

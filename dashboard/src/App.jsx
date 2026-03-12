@@ -31,15 +31,21 @@ const processRepo = (rawData, name) => {
 
         if (score > acc[pkgName].maxScore) acc[pkgName].maxScore = score;
 
+        const formatCwe = (cweData) => {
+            if (!cweData) return '-';
+            if (Array.isArray(cweData)) return cweData.join(', ');
+            return cweData;
+        };
+
         acc[pkgName].vulns.push({
-            id: v.id || '-',
-            severity: v.severity || '-',
+            id: v.id || v.name || '-',
+            severity: v.severity || 'Unknown',
             severityWeight: severityWeight,
             score: v.cvssScore || v.score || '-',
             description: v.description || '-',
             affected: v.vulnerableVersions || v.vulnerable_versions || '-',
             fixedIn: v.fixedIn || v.fixed_in || '-',
-            cwe: v.cwe || (v.cwes ? v.cwes[0] : null) || '-',
+            cwe: formatCwe(v.cwes || v.cwe),
             exploit: v.exploit || '-'
         });
 
@@ -126,7 +132,7 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
 }
 
 const SeverityType = ({ severity }) => {
-    if (!severity || severity === '-' || severity === 'None') return null;
+    if (!severity || severity === '-' || severity === 'None' || severity === 'Unknown') return null;
     const styles = { 'Critical': { bg: '#ff8a8a', text: '#5a0000' }, 'High': { bg: '#ffc6c6', text: '#7a0000' }, 'Medium': { bg: '#ffe58f', text: '#5c4300' }, 'Low': { bg: '#d6e4ff', text: '#002c8c' } };
     const s = styles[severity] || styles['Low'];
     return <span style={{ backgroundColor: s.bg, color: s.text, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-block' }}>{severity}</span>;
@@ -190,16 +196,23 @@ function DependencyRow({ dep }) {
         });
     }, [dep.vulns, cveSortQueue]);
 
+    const hasExploit = useMemo(() => {
+        return dep.vulns.some(v => v.exploit === 'Yes') ? 'Yes' : '-';
+    }, [dep.vulns]);
+
     return (
         <div style={{ borderBottom: '1px solid #e0e0e0' }}>
             <div onClick={() => setIsOpen(!isOpen)} style={{ display: 'grid', gridTemplateColumns: depGridTemplate, alignItems: 'center', padding: '16px 24px', cursor: 'pointer', backgroundColor: isOpen ? '#fcfcfc' : '#fff', transition: 'background 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><span style={{ color: '#161616', fontSize: '12px', width: '16px' }}>{isOpen ? '⌃' : '⌄'}</span><span style={{ color: '#161616', fontSize: '14px', fontWeight: isOpen ? '600' : '400' }}>{dep.name}</span></div>
-                <div style={{ color: '#333', fontSize: '13px' }}>{dep.version}</div><div><SeverityType severity={dep.vulns[0].severity} /></div><div style={{ color: '#333', fontSize: '13px' }}>{dep.vulns.length}</div><div style={{ color: '#333', fontSize: '13px' }}>-</div><div style={{ color: '#333', fontSize: '13px' }}>{dep.fixVersion}</div>
+                <div style={{ color: '#333', fontSize: '13px' }}>{dep.version}</div>
+                <div><SeverityType severity={dep.vulns[0].severity} /></div>
+                <div style={{ color: '#333', fontSize: '13px' }}>{dep.vulns.length}</div>
+                <div style={{ color: hasExploit === 'Yes' ? '#da1e28' : '#333', fontSize: '13px', fontWeight: hasExploit === 'Yes' ? 'bold' : 'normal' }}>{hasExploit}</div>
+                <div style={{ color: '#333', fontSize: '13px' }}>{dep.fixVersion}</div>
             </div>
             {isOpen && (
                 <div style={{ padding: '0 24px 24px 60px', backgroundColor: '#fcfcfc' }}>
                     <div style={{ border: '1px solid #e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
-
                         {cveSortQueue.length > 0 && (
                             <div style={{ padding: '8px 16px', backgroundColor: '#fdfdfd', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
                                 <button onClick={() => setCveSortQueue([])} style={{ fontSize: '12px', color: '#da1e28', border: '1px solid #da1e28', background: 'transparent', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}>
@@ -207,7 +220,6 @@ function DependencyRow({ dep }) {
                                 </button>
                             </div>
                         )}
-
                         <div style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, backgroundColor: '#f4f4f4', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', fontSize: '13px' }}>
                             <MultiQueue label="CVE ID" sortKey="id" sortQueue={cveSortQueue} onSort={handleCveSort} />
                             <MultiQueue label="Severity" sortKey="severityWeight" sortQueue={cveSortQueue} onSort={handleCveSort} />
@@ -217,7 +229,6 @@ function DependencyRow({ dep }) {
                             <MultiQueue label="Fixed In" sortKey="fixedIn" sortQueue={cveSortQueue} onSort={handleCveSort} />
                             <MultiQueue label="CWE" sortKey="cwe" sortQueue={cveSortQueue} onSort={handleCveSort} />
                         </div>
-
                         {sortedCves.map((v, idx) => (
                             <div key={`${v.id}-${idx}-${Math.random()}`} style={{ display: 'grid', gridTemplateColumns: cveGridTemplate, alignItems: 'start', padding: '16px', borderBottom: '1px solid #f0f0f0', fontSize: '13px', color: '#161616' }}>
                                 <a href={`https://nvd.nist.gov/vuln/detail/${v.id}`} target="_blank" rel="noreferrer" style={{ color: '#0f62fe', textDecoration: 'underline' }}>{v.id}</a><div><SeverityType severity={v.severity} /></div><div>{v.score !== '-' ? `${v.score}/10` : '-'}</div><div style={{ paddingRight: '20px', lineHeight: '1.4' }}>{v.description}</div><div>{v.affected}</div><div>{v.fixedIn}</div><div>{v.cwe}</div>
@@ -249,6 +260,7 @@ function RepoAccordion({ repo }) {
 
     const getDepVal = (dep, key) => {
         if (key === 'cves') return dep.vulns.length;
+        if (key === 'exploit') return dep.vulns.some(v => v.exploit === 'Yes') ? 1 : 0;
         return dep[key];
     };
 
