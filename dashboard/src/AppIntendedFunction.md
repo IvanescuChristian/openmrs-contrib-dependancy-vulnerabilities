@@ -10,7 +10,7 @@ The app is supposed to have the following logic:
 9. Again field can be selected and sorted.The CVEs are headers linked to a link ( similar to SymLinks for Linux enthusiasts) .
 10. Final product should be completely scaled to the dimension of each user and have no issue.
 11. The Github Api of course is hidden in a .env and inaccessible to the public(also blurred in the display(can`t be copy pasted,sorry:) ) .
-
+12. The Github Key is taken from .env but if u want to put another one now u can.If the new Key inserted does not function, the key from .env will take its place.
 
 
 
