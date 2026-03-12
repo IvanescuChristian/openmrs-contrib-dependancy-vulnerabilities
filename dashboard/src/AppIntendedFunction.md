@@ -1,5 +1,5 @@
 The app is supposed to have the following logic:
-0. To run use npm run dev
+0. To run use npm run dev and add github api key in .env ( which you will create ) inside the src/ folder . Make sure u have it inside .gitignore
 1. Extract Data through github api with a local fallback. (exception on startup where order is reversed for faster user-end feedback ( reversed order) )
 2. The Data is extracted directly from the expected module-billing module-idgen and core respectively.
 3. If Data is not found, it shall be searched throughout the entire zipArchive( any .json file).
