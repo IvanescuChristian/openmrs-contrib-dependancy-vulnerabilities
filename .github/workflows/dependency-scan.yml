@@ -3,8 +3,6 @@ name: Generate Dependency Check Artifacts
 on:
   push:
     branches: [ main, master ]
-  schedule:
-    - cron: '0 0 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -18,5 +16,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: vulnerability-reports
-          path: data/*.json
+          path: dashboard/src/data/*.json
           retention-days: 7

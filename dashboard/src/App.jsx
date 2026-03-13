@@ -102,7 +102,7 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
             }
         } catch (e) {
             if (e.message === "TokenInvalid") throw e;
-            console.log("No valid artifacts found, falling back to repository files...");
+            console.log("Nu am putut extrage din Artifacts, trecem la fallback...");
         }
 
         try {
@@ -417,6 +417,7 @@ export default function App() {
             ];
             const liveDataResults = [];
             let apiSuccessCount = 0;
+            let artifactSuccessCount = 0;
 
             for (const repoConfig of reposToFetch) {
                 let resultData = null;
@@ -433,6 +434,7 @@ export default function App() {
                             resultData = apiRes.data;
                             resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
                             apiSuccessCount++;
+                            if (apiRes.extractMethod.includes('Artifact')) artifactSuccessCount++;
                         }
                     }
                 } else {
@@ -441,6 +443,7 @@ export default function App() {
                         resultData = apiRes.data;
                         resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
                         apiSuccessCount++;
+                        if (apiRes.extractMethod.includes('Artifact')) artifactSuccessCount++;
                     } else {
                         const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
                         if (localRes.data) {
@@ -458,7 +461,8 @@ export default function App() {
             liveDataResults.sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
             setReports(liveDataResults);
 
-            if (apiSuccessCount === reposToFetch.length) setFetchStatus('live');
+            if (artifactSuccessCount === reposToFetch.length) setFetchStatus('artifact-live');
+            else if (apiSuccessCount === reposToFetch.length) setFetchStatus('live');
             else if (apiSuccessCount > 0) setFetchStatus('partial');
             else setFetchStatus('local');
 
@@ -488,7 +492,7 @@ export default function App() {
 
                 <div className="controls-panel">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, maxWidth: '400px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub AuthKey (Required for Actions):</label>
+                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub AuthKey (Required for Actions Artifacts):</label>
                         <input
                             type="password"
                             value={token}
@@ -502,9 +506,10 @@ export default function App() {
                         {isLoading ? 'Loading...' : 'Fetch Live Data'}
                     </button>
 
-                    {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Extracted Data (Live API)</span>}
-                    {!isLoading && fetchStatus === 'partial' && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>Partial Extracted Data</span>}
-                    {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Data (No Token or API limits)</span>}
+                    {!isLoading && fetchStatus === 'artifact-live' && <span style={{ marginTop: '16px', color: '#0043ce', fontWeight: 'bold' }}>Live Data (GitHub Actions Artifacts)</span>}
+                    {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Live Data (Repository JSON)</span>}
+                    {!isLoading && fetchStatus === 'partial' && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>Partial Live Data</span>}
+                    {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Fallback (Missing API Token)</span>}
                 </div>
 
                 {errorMsg && <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px' }}>{errorMsg}</div>}
