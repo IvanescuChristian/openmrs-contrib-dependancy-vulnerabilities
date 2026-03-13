@@ -66,84 +66,101 @@ const processRepo = (rawData, name) => {
     return { name, maxScore: repoMaxScore, maxSeverity: repoSeverity, dependencies: deps };
 };
 
-async function fetchLiveRepoData(repoName, browserToken, envToken) {
+async function fetchLiveRepoData(repoName, browserToken, envToken, forceMethod) {
     const owner = 'IvanescuChristian';
     const repo = 'openmrs-contrib-dependancy-vulnerabilities';
     const basePath = 'dashboard/src';
 
-    const fetchWithToken = async (currentToken, keySourceName) => {
+    const executeFetch = async (currentToken, keySourceName) => {
         const headers = { 'Authorization': `Bearer ${currentToken}` };
 
-        try {
-            const artifactsUrl = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=5`;
-            const artRes = await fetch(artifactsUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3+json' } });
+        if (forceMethod === 'auto' || forceMethod === 'artifact') {
+            try {
+                const artifactsUrl = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=5`;
+                const artRes = await fetch(artifactsUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3+json' } });
 
-            if (artRes.ok) {
-                const artData = await artRes.json();
-                const validArtifact = artData.artifacts.find(a => !a.expired);
+                if (artRes.ok) {
+                    const artData = await artRes.json();
+                    const validArtifact = artData.artifacts.find(a => !a.expired);
 
-                if (validArtifact) {
-                    const zipRes = await fetch(validArtifact.archive_download_url, { headers });
-                    if (zipRes.ok) {
-                        const zipBlob = await zipRes.blob();
-                        const zip = await JSZip.loadAsync(zipBlob);
+                    if (validArtifact) {
+                        const zipRes = await fetch(validArtifact.archive_download_url, { headers });
+                        if (zipRes.ok) {
+                            const zipBlob = await zipRes.blob();
+                            const zip = await JSZip.loadAsync(zipBlob);
 
-                        let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
-                        if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+                            let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
+                            if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
 
-                        if (jsonFile) {
-                            const jsonContent = await jsonFile.async('string');
-                            return { data: JSON.parse(jsonContent), extractMethod: 'GH Actions Artifact (Latest)', keyUsed: keySourceName };
+                            if (jsonFile) {
+                                const jsonContent = await jsonFile.async('string');
+                                return { data: JSON.parse(jsonContent), extractMethod: 'GH Actions Artifact (Latest)', keyUsed: keySourceName };
+                            }
                         }
                     }
+                } else if (artRes.status === 401 || artRes.status === 403) {
+                    throw new Error("TokenInvalid");
                 }
-            } else if (artRes.status === 401 || artRes.status === 403) {
-                throw new Error("TokenInvalid");
+            } catch (e) {
+                if (e.message === "TokenInvalid") throw e;
+                if (forceMethod === 'artifact') throw new Error("NotFound");
             }
-        } catch (e) {
-            if (e.message === "TokenInvalid") throw e;
-            console.log("Nu am putut extrage din Artifacts, trecem la fallback...");
         }
 
-        try {
-            const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
-            const jsonRes = await fetch(jsonUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
+        if (forceMethod === 'auto' || forceMethod === 'repo-json') {
+            try {
+                const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
+                const jsonRes = await fetch(jsonUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
 
-            if (jsonRes.ok) {
-                return { data: await jsonRes.json(), extractMethod: 'Repo JSON', keyUsed: keySourceName };
-            }
-        } catch (e) {}
-
-        try {
-            const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
-            const zipRes = await fetch(zipUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
-
-            if (zipRes.ok) {
-                const zipBlob = await zipRes.blob();
-                const zip = await JSZip.loadAsync(zipBlob);
-
-                let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
-                if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
-
-                if (jsonFile) {
-                    const jsonContent = await jsonFile.async('string');
-                    return { data: JSON.parse(jsonContent), extractMethod: 'Repo ZIP', keyUsed: keySourceName };
+                if (jsonRes.ok) {
+                    return { data: await jsonRes.json(), extractMethod: 'Repo JSON', keyUsed: keySourceName };
+                } else if (jsonRes.status === 401 || jsonRes.status === 403) {
+                    throw new Error("TokenInvalid");
                 }
+            } catch (e) {
+                if (e.message === "TokenInvalid") throw e;
+                if (forceMethod === 'repo-json') throw new Error("NotFound");
             }
-        } catch (e) {}
+        }
+
+        if (forceMethod === 'auto' || forceMethod === 'repo-zip') {
+            try {
+                const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
+                const zipRes = await fetch(zipUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
+
+                if (zipRes.ok) {
+                    const zipBlob = await zipRes.blob();
+                    const zip = await JSZip.loadAsync(zipBlob);
+
+                    let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
+                    if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+
+                    if (jsonFile) {
+                        const jsonContent = await jsonFile.async('string');
+                        return { data: JSON.parse(jsonContent), extractMethod: 'Repo ZIP', keyUsed: keySourceName };
+                    }
+                } else if (zipRes.status === 401 || zipRes.status === 403) {
+                    throw new Error("TokenInvalid");
+                }
+            } catch (e) {
+                if (e.message === "TokenInvalid") throw e;
+                if (forceMethod === 'repo-zip') throw new Error("NotFound");
+            }
+        }
 
         throw new Error("NotFound");
     };
 
     if (browserToken) {
         try {
-            return await fetchWithToken(browserToken, 'Browser');
-        } catch (e) {}
+            return await executeFetch(browserToken, 'Browser Input');
+        } catch (e) {
+        }
     }
 
     if (envToken && envToken !== browserToken) {
         try {
-            return await fetchWithToken(envToken, '.env');
+            return await executeFetch(envToken, '.env');
         } catch (e) {}
     }
 
@@ -376,6 +393,7 @@ function RepoAccordion({ repo }) {
 export default function App() {
     const [reports, setReports] = useState([]);
     const [token, setToken] = useState('');
+    const [fetchMethod, setFetchMethod] = useState('auto');
     const envToken = import.meta.env.VITE_GITHUB_TOKEN || '';
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState('');
@@ -405,7 +423,7 @@ export default function App() {
         return { data, source };
     };
 
-    const loadData = async (isFirstRun) => {
+    const loadData = async (methodToUse = 'auto') => {
         setIsLoading(true);
         setErrorMsg('');
         setFetchStatus(null);
@@ -418,37 +436,36 @@ export default function App() {
             const liveDataResults = [];
             let apiSuccessCount = 0;
             let artifactSuccessCount = 0;
+            let localSuccessCount = 0;
 
             for (const repoConfig of reposToFetch) {
                 let resultData = null;
                 let resultSource = '';
 
-                if (isFirstRun) {
+                if (methodToUse === 'local') {
                     const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
                     if (localRes.data) {
                         resultData = localRes.data;
                         resultSource = localRes.source;
-                    } else {
-                        const apiRes = await fetchLiveRepoData(repoConfig.name, token, envToken);
-                        if (apiRes && apiRes.data) {
-                            resultData = apiRes.data;
-                            resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
-                            apiSuccessCount++;
-                            if (apiRes.extractMethod.includes('Artifact')) artifactSuccessCount++;
-                        }
+                        localSuccessCount++;
                     }
                 } else {
-                    const apiRes = await fetchLiveRepoData(repoConfig.name, token, envToken);
+                    const apiRes = await fetchLiveRepoData(repoConfig.name, token, envToken, methodToUse);
                     if (apiRes && apiRes.data) {
                         resultData = apiRes.data;
                         resultSource = `API: ${apiRes.extractMethod} (Key: ${apiRes.keyUsed})`;
                         apiSuccessCount++;
                         if (apiRes.extractMethod.includes('Artifact')) artifactSuccessCount++;
                     } else {
-                        const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
-                        if (localRes.data) {
-                            resultData = localRes.data;
-                            resultSource = localRes.source;
+                        if (methodToUse === 'auto') {
+                            const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
+                            if (localRes.data) {
+                                resultData = localRes.data;
+                                resultSource = localRes.source;
+                                localSuccessCount++;
+                            }
+                        } else {
+                            setErrorMsg(`Error while brute forcing : ${methodToUse}. Check Token or logs`);
                         }
                     }
                 }
@@ -461,10 +478,9 @@ export default function App() {
             liveDataResults.sort((a, b) => b.maxScore - a.maxScore || a.name.localeCompare(b.name));
             setReports(liveDataResults);
 
-            if (artifactSuccessCount === reposToFetch.length) setFetchStatus('artifact-live');
-            else if (apiSuccessCount === reposToFetch.length) setFetchStatus('live');
-            else if (apiSuccessCount > 0) setFetchStatus('partial');
-            else setFetchStatus('local');
+            if (artifactSuccessCount > 0) setFetchStatus('artifact-live');
+            else if (apiSuccessCount > 0) setFetchStatus('live');
+            else if (localSuccessCount > 0) setFetchStatus('local');
 
         } catch (err) {
             setErrorMsg(err.message);
@@ -474,12 +490,8 @@ export default function App() {
     };
 
     useEffect(() => {
-        loadData(true);
+        loadData('auto');
     }, []);
-
-    const handleFetchLive = () => {
-        loadData(false);
-    };
 
     return (
         <div className="app-container">
@@ -490,30 +502,50 @@ export default function App() {
                     <p className="header-desc">A summary of known security vulnerabilities detected across OpenMRS modules.</p>
                 </header>
 
-                <div className="controls-panel">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, maxWidth: '400px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub AuthKey (Required for Actions Artifacts):</label>
-                        <input
-                            type="password"
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            placeholder="ghp_xxxx..."
-                            autoComplete="new-password"
-                            style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc' }}
-                        />
-                    </div>
-                    <button onClick={handleFetchLive} disabled={isLoading} style={{ padding: '10px 20px', backgroundColor: '#0f62fe', color: 'white', border: 'none', borderRadius: '4px', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: '600', marginTop: '16px' }}>
-                        {isLoading ? 'Loading...' : 'Fetch Live Data'}
-                    </button>
+                <div className="controls-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', backgroundColor: '#f4f4f4', borderRadius: '8px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
 
-                    {!isLoading && fetchStatus === 'artifact-live' && <span style={{ marginTop: '16px', color: '#0043ce', fontWeight: 'bold' }}>Live Data (GitHub Actions Artifacts)</span>}
-                    {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Live Data (Repository JSON)</span>}
-                    {!isLoading && fetchStatus === 'partial' && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>Partial Live Data</span>}
-                    {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Fallback (Missing API Token)</span>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: '250px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: '600', color: '#161616' }}>GitHub AuthKey:</label>
+                            <input
+                                type="password"
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder="ghp_xxxx..."
+                                autoComplete="new-password"
+                                style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #c6c6c6', maxWidth: '350px' }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: '600', color: '#161616' }}>Chose Fetch:</label>
+                            <select
+                                value={fetchMethod}
+                                onChange={(e) => setFetchMethod(e.target.value)}
+                                style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #c6c6c6', cursor: 'pointer', backgroundColor: '#fff', fontSize: '13px' }}
+                            >
+                                <option value="auto">Auto (Recommended)</option>
+                                <option value="artifact">Actions Artifacts</option>
+                                <option value="repo-json">JSON Files API</option>
+                                <option value="repo-zip">ZIP File API</option>
+                                <option value="local">Local</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+                        <button onClick={() => loadData(fetchMethod)} disabled={isLoading} style={{ padding: '10px 24px', backgroundColor: '#0f62fe', color: 'white', border: 'none', borderRadius: '4px', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: '600', transition: 'background 0.2s' }}>
+                            {isLoading ? 'Loading...' : 'Fetch Live Data'}
+                        </button>
+
+                        {!isLoading && fetchStatus === 'artifact-live' && <span style={{ color: '#0043ce', fontWeight: 'bold', fontSize: '14px' }}>Extracted via CI/CD Artifacts</span>}
+                        {!isLoading && fetchStatus === 'live' && <span style={{ color: '#24a148', fontWeight: 'bold', fontSize: '14px' }}>Extracted via API </span>}
+                        {!isLoading && fetchStatus === 'local' && <span style={{ color: '#da1e28', fontWeight: 'bold', fontSize: '14px' }}>Local Fallback</span>}
+                    </div>
                 </div>
 
-                {errorMsg && <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px' }}>{errorMsg}</div>}
-                {isLoading ? <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px', color: '#666' }}>Fetching reports...</div> : reports.map(repo => <RepoAccordion key={repo.name} repo={repo} />)}
+                {errorMsg && <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px', fontWeight: '500' }}>{errorMsg}</div>}
+                {isLoading ? <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px', color: '#666' }}>Analyzing vulnerabilities...</div> : reports.map(repo => <RepoAccordion key={repo.name} repo={repo} />)}
             </div>
         </div>
     );
