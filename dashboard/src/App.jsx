@@ -155,13 +155,16 @@ async function fetchLiveRepoData(repoName, browserToken, envToken, forceMethod) 
         try {
             return await executeFetch(browserToken, 'Browser Input');
         } catch (e) {
+            console.log("Browser token fetch failed, proceeding to environment token.");
         }
     }
 
     if (envToken && envToken !== browserToken) {
         try {
             return await executeFetch(envToken, '.env');
-        } catch (e) {}
+        } catch (e) {
+            console.log("Environment token fetch failed.");
+        }
     }
 
     return null;
@@ -418,7 +421,9 @@ export default function App() {
                         source = 'Local Fallback (ZIP)';
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log("Local ZIP fallback failed.", e);
+            }
         }
         return { data, source };
     };
@@ -442,6 +447,7 @@ export default function App() {
                 let resultData = null;
                 let resultSource = '';
 
+                // LOGICA REVIZUITĂ PENTRU A DA PRIORITATE DATELOR LOCALE
                 if (methodToUse === 'local') {
                     const localRes = await fetchLocalData(repoConfig.name, repoConfig.fallback);
                     if (localRes.data) {
@@ -465,7 +471,7 @@ export default function App() {
                                 localSuccessCount++;
                             }
                         } else {
-                            setErrorMsg(`Error while brute forcing : ${methodToUse}. Check Token or logs`);
+                            setErrorMsg(`Error while forcing fetch method: ${methodToUse}. Check Token or logs.`);
                         }
                     }
                 }
@@ -489,8 +495,9 @@ export default function App() {
         }
     };
 
+    // LOGICA NOUA: La primul render apelam direct cu 'local' pentru feedback rapid.
     useEffect(() => {
-        loadData('auto');
+        loadData('local');
     }, []);
 
     return (
@@ -518,7 +525,7 @@ export default function App() {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: '600', color: '#161616' }}>Chose Fetch:</label>
+                            <label style={{ fontSize: '13px', fontWeight: '600', color: '#161616' }}>Choose Fetch Method:</label>
                             <select
                                 value={fetchMethod}
                                 onChange={(e) => setFetchMethod(e.target.value)}
