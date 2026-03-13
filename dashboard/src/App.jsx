@@ -72,46 +72,65 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
     const basePath = 'dashboard/src';
 
     const fetchWithToken = async (currentToken, keySourceName) => {
-        const headers = { 'Accept': 'application/vnd.github.v3.raw' };
-        if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+        const headers = { 'Authorization': `Bearer ${currentToken}` };
 
         try {
-            const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
-            const jsonRes = await fetch(jsonUrl, { headers });
+            const artifactsUrl = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=5`;
+            const artRes = await fetch(artifactsUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3+json' } });
 
-            if (jsonRes.ok) {
-                return { data: await jsonRes.json(), extractMethod: 'JSON', keyUsed: keySourceName };
-            } else if (jsonRes.status === 401 || jsonRes.status === 403) {
+            if (artRes.ok) {
+                const artData = await artRes.json();
+                const validArtifact = artData.artifacts.find(a => !a.expired);
+
+                if (validArtifact) {
+                    const zipRes = await fetch(validArtifact.archive_download_url, { headers });
+                    if (zipRes.ok) {
+                        const zipBlob = await zipRes.blob();
+                        const zip = await JSZip.loadAsync(zipBlob);
+
+                        let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
+                        if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
+
+                        if (jsonFile) {
+                            const jsonContent = await jsonFile.async('string');
+                            return { data: JSON.parse(jsonContent), extractMethod: 'GH Actions Artifact (Latest)', keyUsed: keySourceName };
+                        }
+                    }
+                }
+            } else if (artRes.status === 401 || artRes.status === 403) {
                 throw new Error("TokenInvalid");
             }
         } catch (e) {
             if (e.message === "TokenInvalid") throw e;
+            console.log("No valid artifacts found, falling back to repository files...");
         }
 
         try {
+            const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/data/${repoName}.json`;
+            const jsonRes = await fetch(jsonUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
+
+            if (jsonRes.ok) {
+                return { data: await jsonRes.json(), extractMethod: 'Repo JSON', keyUsed: keySourceName };
+            }
+        } catch (e) {}
+
+        try {
             const zipUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}/public/test.zip`;
-            const zipRes = await fetch(zipUrl, { headers });
+            const zipRes = await fetch(zipUrl, { headers: { ...headers, 'Accept': 'application/vnd.github.v3.raw' } });
 
             if (zipRes.ok) {
                 const zipBlob = await zipRes.blob();
                 const zip = await JSZip.loadAsync(zipBlob);
 
                 let jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.includes(repoName) && f.name.endsWith('.json'));
-
-                if (!jsonFile) {
-                    jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
-                }
+                if (!jsonFile) jsonFile = Object.values(zip.files).find(f => !f.dir && f.name.endsWith('.json') && !f.name.includes('package'));
 
                 if (jsonFile) {
                     const jsonContent = await jsonFile.async('string');
-                    return { data: JSON.parse(jsonContent), extractMethod: 'ZIP', keyUsed: keySourceName };
+                    return { data: JSON.parse(jsonContent), extractMethod: 'Repo ZIP', keyUsed: keySourceName };
                 }
-            } else if (zipRes.status === 401 || zipRes.status === 403) {
-                throw new Error("TokenInvalid");
             }
-        } catch (e) {
-            if (e.message === "TokenInvalid") throw e;
-        }
+        } catch (e) {}
 
         throw new Error("NotFound");
     };
@@ -133,7 +152,12 @@ async function fetchLiveRepoData(repoName, browserToken, envToken) {
 
 const SeverityType = ({ severity }) => {
     if (!severity || severity === '-' || severity === 'None' || severity === 'Unknown') return null;
-    const styles = { 'Critical': { bg: '#ff8a8a', text: '#5a0000' }, 'High': { bg: '#ffc6c6', text: '#7a0000' }, 'Medium': { bg: '#ffe58f', text: '#5c4300' }, 'Low': { bg: '#d6e4ff', text: '#002c8c' } };
+    const styles = {
+        'Critical': { bg: '#ff8a8a', text: '#5a0000' },
+        'High': { bg: '#ffc6c6', text: '#7a0000' },
+        'Medium': { bg: '#ffe58f', text: '#5c4300' },
+        'Low': { bg: '#d6e4ff', text: '#002c8c' }
+    };
     const s = styles[severity] || styles['Low'];
     return <span style={{ backgroundColor: s.bg, color: s.text, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-block' }}>{severity}</span>;
 };
@@ -314,8 +338,8 @@ function RepoAccordion({ repo }) {
                         {repo.name}
                         <span style={{
                             fontSize: '11px', padding: '4px 8px', borderRadius: '12px',
-                            backgroundColor: repo.dataSource.includes('Local') ? '#ffe5e5' : '#defbe6',
-                            color: repo.dataSource.includes('Local') ? '#da1e28' : '#198038',
+                            backgroundColor: repo.dataSource.includes('Local') ? '#ffe5e5' : (repo.dataSource.includes('Artifact') ? '#d0e2ff' : '#defbe6'),
+                            color: repo.dataSource.includes('Local') ? '#da1e28' : (repo.dataSource.includes('Artifact') ? '#0043ce' : '#198038'),
                             fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px'
                         }}>
                             {repo.dataSource}
@@ -464,12 +488,12 @@ export default function App() {
 
                 <div className="controls-panel">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, maxWidth: '400px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub AuthKey:</label>
+                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#666' }}>GitHub AuthKey (Required for Actions):</label>
                         <input
                             type="password"
                             value={token}
                             onChange={(e) => setToken(e.target.value)}
-                            placeholder="ghp_xxxx"
+                            placeholder="ghp_xxxx..."
                             autoComplete="new-password"
                             style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc' }}
                         />
@@ -478,10 +502,9 @@ export default function App() {
                         {isLoading ? 'Loading...' : 'Fetch Live Data'}
                     </button>
 
-                    {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Extracted Data</span>}
+                    {!isLoading && fetchStatus === 'live' && <span style={{ marginTop: '16px', color: '#24a148', fontWeight: 'bold' }}>Extracted Data (Live API)</span>}
                     {!isLoading && fetchStatus === 'partial' && <span style={{ marginTop: '16px', color: '#f1c21b', fontWeight: 'bold' }}>Partial Extracted Data</span>}
-                    {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Data</span>}
-                    {(!isLoading && fetchStatus === null) && <span style={{ marginTop: '16px', color: '#666', fontWeight: 'bold' }}>Local Data</span>}
+                    {(!isLoading && fetchStatus === 'local') && <span style={{ marginTop: '16px', color: '#da1e28', fontWeight: 'bold' }}>Local Data (No Token or API limits)</span>}
                 </div>
 
                 {errorMsg && <div style={{ backgroundColor: '#ffe5e5', color: '#da1e28', padding: '16px', borderRadius: '4px', marginBottom: '24px' }}>{errorMsg}</div>}

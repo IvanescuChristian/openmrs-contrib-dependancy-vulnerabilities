@@ -1,0 +1,22 @@
+name: Generate Dependency Check Artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  upload-scans:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Upload Vulnerability Reports as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: vulnerability-reports
+          path: data/*.json
+          retention-days: 7
